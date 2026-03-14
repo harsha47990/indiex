@@ -1,0 +1,129 @@
+<!-- pages/games.html — Games lobby page fragment -->
+<style>
+  .games-header {
+    text-align: center;
+    margin-bottom: 36px;
+  }
+  .games-header h1 { font-size: 32px; margin-bottom: 8px; }
+  .games-header p { color: var(--text-dim); font-size: 14px; }
+
+  .games-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 20px;
+  }
+  .game-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: all .3s;
+    cursor: pointer;
+    text-decoration: none; color: inherit;
+    display: block;
+  }
+  .game-card:hover {
+    border-color: var(--primary);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(108,92,231,.15);
+  }
+  .game-card .thumb {
+    height: 160px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 72px;
+    background: var(--surface-2);
+    transition: background .3s;
+  }
+  .game-card:hover .thumb { background: rgba(108,92,231,.08); }
+  .game-card .info {
+    padding: 18px;
+  }
+  .game-card .info h3 {
+    font-size: 16px; margin-bottom: 6px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .game-card .info p {
+    font-size: 12px; color: var(--text-dim); line-height: 1.6;
+  }
+  .game-card .info .meta {
+    display: flex; align-items: center; gap: 12px;
+    margin-top: 12px; font-size: 11px;
+  }
+  .game-card .info .meta .tag {
+    padding: 3px 8px; border-radius: 4px;
+    background: rgba(108,92,231,.1); color: var(--primary);
+    font-weight: 600; text-transform: uppercase; letter-spacing: .5px;
+  }
+  .game-card .info .meta .cost {
+    color: var(--warning); font-weight: 700;
+  }
+  .game-card .info .meta .cost::before { content: '🪙 '; }
+
+  .coming-soon {
+    opacity: .5; pointer-events: none;
+  }
+  .coming-soon .thumb::after {
+    content: 'COMING SOON';
+    position: absolute;
+    font-size: 12px; font-weight: 700; letter-spacing: 2px;
+    color: var(--text-dim);
+  }
+  .coming-soon .thumb { position: relative; }
+</style>
+
+<div class="games-header">
+  <h1>🎮 Games</h1>
+  <p>Play online games using your coins. Pick a game to get started!</p>
+</div>
+
+<div class="games-grid">
+
+  <a class="game-card" href="/games/teen-patti">
+    <div class="thumb">🃏</div>
+    <div class="info">
+      <h3>Teen Patti</h3>
+      <p>The classic Indian poker card game. Create a room, invite friends, and play multiplayer!</p>
+      <div class="meta">
+        <span class="tag">Multiplayer</span>
+        <span class="cost">Set by room admin</span>
+      </div>
+    </div>
+  </a>
+
+  <div class="game-card coming-soon">
+    <div class="thumb">🎰</div>
+    <div class="info">
+      <h3>Slots</h3>
+      <p>Spin the reels and try your luck with the classic slot machine.</p>
+      <div class="meta">
+        <span class="tag">Luck</span>
+        <span class="cost">5 per spin</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="game-card coming-soon">
+    <div class="thumb">🎲</div>
+    <div class="info">
+      <h3>Dice Roll</h3>
+      <p>Predict the dice outcome and win big. Simple but addictive!</p>
+      <div class="meta">
+        <span class="tag">Dice</span>
+        <span class="cost">5 per roll</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="game-card coming-soon">
+    <div class="thumb">♠️</div>
+    <div class="info">
+      <h3>Blackjack</h3>
+      <p>Classic 21. Beat the dealer without going over. Strategy meets luck.</p>
+      <div class="meta">
+        <span class="tag">Cards</span>
+        <span class="cost">10 per hand</span>
+      </div>
+    </div>
+  </div>
+
+</div>

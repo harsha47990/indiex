@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Indiex — Login</title>
+<link rel="icon" type="image/png" href="/static/logo.png" />
+<style>
+  .brand-logo {
+    width: 72px; height: 72px;
+    border-radius: 16px;
+    margin-bottom: 14px;
+    filter: drop-shadow(0 4px 16px rgba(108,92,231,.35));
+    animation: logoFloat 3s ease-in-out infinite alternate;
+  }
+  @keyframes logoFloat {
+    0%   { transform: translateY(0); }
+    100% { transform: translateY(-6px); }
+  }
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --border: #1e1e2e;
+    --primary: #6c5ce7;
+    --primary-hover: #7c6ff7;
+    --text: #e2e2e8;
+    --text-dim: #8888a0;
+    --danger: #ff4757;
+    --success: #2ed573;
+    --radius: 12px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  /* Animated gradient background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at 20% 50%, rgba(108,92,231,.12) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(46,213,115,.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(255,71,87,.06) 0%, transparent 50%);
+    animation: drift 20s ease-in-out infinite alternate;
+    z-index: 0;
+  }
+  @keyframes drift {
+    0%   { transform: scale(1) translate(0, 0); }
+    100% { transform: scale(1.15) translate(-30px, 20px); }
+  }
+
+  .login-card {
+    position: relative; z-index: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 48px 40px 40px;
+    width: 380px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  }
+
+  .brand {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  .brand h1 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    background: linear-gradient(135deg, var(--primary), var(--success));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .brand p {
+    color: var(--text-dim);
+    font-size: 13px;
+    margin-top: 6px;
+  }
+
+  .field { margin-bottom: 20px; }
+  .field label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .field input {
+    width: 100%;
+    padding: 12px 14px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 14px;
+    outline: none;
+    transition: border-color .2s;
+  }
+  .field input:focus { border-color: var(--primary); }
+
+  .btn-login {
+    width: 100%;
+    padding: 13px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .2s, transform .1s;
+    margin-top: 8px;
+  }
+  .btn-login:hover { background: var(--primary-hover); }
+  .btn-login:active { transform: scale(.98); }
+
+  .error-msg {
+    color: var(--danger);
+    font-size: 13px;
+    text-align: center;
+    margin-top: 14px;
+    min-height: 18px;
+  }
+
+  .pw-wrap {
+    position: relative;
+  }
+  .pw-wrap input { width: 100%; padding-right: 42px; }
+  .pw-toggle {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; color: var(--text-dim);
+    cursor: pointer; font-size: 16px; padding: 4px;
+    line-height: 1; transition: color .2s;
+  }
+  .pw-toggle:hover { color: var(--text); }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-8px); }
+    40%, 80% { transform: translateX(8px); }
+  }
+  .shake { animation: shake .4s ease; }
+</style>
+</head>
+<body>
+
+<div class="login-card" id="card">
+  <div class="brand">
+    <img src="/static/logo.png" alt="Indiex" class="brand-logo" />
+    <h1>INDIEX</h1>
+    <p>Sign in to continue</p>
+  </div>
+
+  <form id="login-form" onsubmit="handleLogin(event)">
+    <div class="field">
+      <label for="username">Username</label>
+      <input type="text" id="username" placeholder="Enter your username" autocomplete="username" required autofocus />
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <div class="pw-wrap">
+        <input type="password" id="password" placeholder="Enter your password" autocomplete="current-password" required />
+        <button type="button" class="pw-toggle" onclick="togglePw('password', this)" title="Show password">👁</button>
+      </div>
+    </div>
+    <button class="btn-login" id="btn-login" type="submit">Sign In</button>
+    <div class="error-msg" id="error"></div>
+  </form>
+</div>
+
+<script>
+function togglePw(id, btn) {
+  const inp = document.getElementById(id);
+  const show = inp.type === 'password';
+  inp.type = show ? 'text' : 'password';
+  btn.textContent = show ? '🙈' : '👁';
+  btn.title = show ? 'Hide password' : 'Show password';
+}
+
+async function handleLogin(e) {
+  e.preventDefault();
+  const errEl = document.getElementById('error');
+  const btn = document.getElementById('btn-login');
+  const card = document.getElementById('card');
+  errEl.textContent = '';
+  btn.disabled = true;
+  btn.textContent = 'Signing in…';
+
+  const user = document.getElementById('username').value.trim();
+  const pass = document.getElementById('password').value;
+
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: user, password: pass }),
+    });
+    const data = await res.json();
+
+    if (res.ok && data.ok) {
+      const expires = new Date(Date.now() + 24*60*60*1000).toUTCString();
+      document.cookie = `session_key=${data.session_key}; path=/; expires=${expires}; SameSite=Lax`;
+      document.cookie = `username=${encodeURIComponent(data.username)}; path=/; expires=${expires}; SameSite=Lax`;
+      document.cookie = `last_activity=${Date.now()}; path=/; expires=${expires}; SameSite=Lax`;
+
+      btn.textContent = '✓ Success!';
+      btn.style.background = 'var(--success)';
+
+      // Route based on must_reset or role
+      if (data.must_reset_password) {
+        setTimeout(() => { window.location.href = '/reset-password'; }, 400);
+      } else if (data.role === 'admin') {
+        setTimeout(() => { window.location.href = '/admin'; }, 400);
+      } else {
+        setTimeout(() => { window.location.href = '/home'; }, 400);
+      }
+    } else {
+      throw new Error(data.error || 'Invalid credentials');
+    }
+  } catch (err) {
+    errEl.textContent = err.message;
+    card.classList.add('shake');
+    setTimeout(() => card.classList.remove('shake'), 400);
+    btn.disabled = false;
+    btn.textContent = 'Sign In';
+  }
+}
+
+// Auto-redirect if already logged in
+(function checkSession() {
+  const key = document.cookie.split('; ').find(c => c.startsWith('session_key='));
+  if (key) {
+    // Let server decide redirect via GET /
+    // (the server checks session and redirects)
+  }
+})();
+</script>
+</body>
+</html>

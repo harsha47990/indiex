@@ -1,0 +1,1192 @@
+{
+    "data": {
+        "fancyData": [
+            {
+                "eventId": "35353603",
+                "exEventId": "400202631195657132",
+                "eventName": "Eastern Cape Linyathi v Limpopo",
+                "marketId": "101202631110132308",
+                "exMarketId": "101202631110132308",
+                "marketName": "LIM 50 Over Runs ADV",
+                "min": 100,
+                "max": 100000,
+                "marketType": "Fancy",
+                "sequence": 22,
+                "popular": false,
+                "tableFlag": "FANCY",
+                "isScore": true,
+                "isSuperFancy": false,
+                "isVoid": 0,
+                "isSettlement": 0,
+                "oddsData": {
+                    "inPlay": false,
+                    "preBet": false,
+                    "betDelay": 3,
+                    "backVolume": 1454729,
+                    "layVolume": 1478626,
+                    "totalMatched": 0,
+                    "status": "ONLINE",
+                    "crossMatching": true,
+                    "runners": [
+                        {
+                            "selectionId": "101202631110132308",
+                            "handicap": 0,
+                            "status": "ONLINE",
+                            "price": {
+                                "back": [
+                                    {
+                                        "size": 100,
+                                        "price": 209
+                                    },
+                                    {
+                                        "size": 100,
+                                        "price": 209
+                                    },
+                                    {
+                                        "size": 100,
+                                        "price": 209
+                                    }
+                                ],
+                                "lay": [
+                                    {
+                                        "size": 100,
+                                        "price": 207
+                                    },
+                                    {
+                                        "size": 100,
+                                        "price": 207
+                                    },
+                                    {
+                                        "size": 100,
+                                        "price": 207
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                "runnersData": {
+                    "101202631110132308": "LIM 50 Over Runs ADV"
+                },
+                "eventTime": "2026-03-11T10:01:32.308Z",
+                "createdAt": "2026-03-11T10:01:32.308Z",
+                "oddsType": "FANCY"
+            },
+            {
+                "eventId": "35353603",
+                "exEventId": "400202631195657132",
+                "eventName": "Eastern Cape Linyathi v Limpopo",
+                "marketId": "101202631273933261",
+                "exMarketId": "101202631273933261",
+                "marketName": "LIM Only 44th Over Runs",
+                "min": 100,
+                "max": 10000,
+                "marketType": "Fancy",
+                "sequence": 10,
+                "popular": true,
+                "tableFlag": "FANCY",
+                "isScore": true,
+                "isSuperFancy": false,
+                "isVoid": 0,
+                "isSettlement": 0,
+                "oddsData": {
+                    "inPlay": false,
+                    "preBet": false,
+                    "betDelay": 3,
+                    "backVolume": 500000,
+                    "layVolume": 500000,
+                    "totalMatched": 0,
+                    "status": "BALLRUN",
+                    "crossMatching": true,
+                    "runners": [
+                        {
+                            "selectionId": "101202631273933261",
+                            "handicap": 0,
+                            "status": "ONLINE",
+                            "price": {
+                                "back": [
+                                    {
+                                        "size": 90,
+                                        "price": 5
+                                    },
+                                    {
+                                        "size": 90,
+                                        "price": 5
+                                    },
+                                    {
+                                        "size": 90,
+                                        "price": 5
+                                    }
+                                ],
+                                "lay": [
+                                    {
+                                        "size": 110,
+                                        "price": 5
+                                    },
+                                    {
+                                        "size": 110,
+                                        "price": 5
+                                    },
+                                    {
+                                        "size": 110,
+                                        "price": 5
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                "runnersData": {
+                    "101202631273933261": "LIM Only 44th Over Runs"
+                },
+                "eventTime": "2026-03-12T07:39:33.262Z",
+                "createdAt": "2026-03-12T07:39:33.262Z",
+                "oddsType": "FANCY"
+            }
+        ],
+        "matchOddsData": [
+            {
+                "eventId": "35353603",
+                "exEventId": "400202631195657132",
+                "eventName": "Eastern Cape Linyathi v Limpopo",
+                "marketId": "1.255054753",
+                "exMarketId": "40202631195827292",
+                "marketName": "Match Odds",
+                "min": 100,
+                "max": 1000,
+                "marketType": "MATCH_ODDS",
+                "sequence": 0,
+                "popular": true,
+                "tableFlag": "MATCH_ODDS",
+                "isScore": true,
+                "isSuperFancy": false,
+                "isVoid": 0,
+                "isSettlement": 0,
+                "oddsData": {
+                    "inPlay": true,
+                    "preBet": false,
+                    "betDelay": 6,
+                    "totalMatched": 117880,
+                    "status": "OPEN",
+                    "crossMatching": true,
+                    "runners": [
+                        {
+                            "selectionId": 60551675,
+                            "handicap": 0,
+                            "status": "ACTIVE",
+                            "price": {
+                                "back": [
+                                    {
+                                        "price": 1.17,
+                                        "size": 363.32
+                                    },
+                                    {
+                                        "price": 1.14,
+                                        "size": 143.14
+                                    },
+                                    {
+                                        "price": 1.13,
+                                        "size": 172.85
+                                    }
+                                ],
+                                "lay": [
+                                    {
+                                        "price": 1.27,
+                                        "size": 158.35
+                                    },
+                                    {
+                                        "price": 1.3,
+                                        "size": 131.79
+                                    },
+                                    {
+                                        "price": 1.52,
+                                        "size": 101.72
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "selectionId": 41151668,
+                            "handicap": 0,
+                            "status": "ACTIVE",
+                            "price": {
+                                "back": [
+                                    {
+                                        "size": 103.34,
+                                        "price": 4.7
+                                    },
+                                    {
+                                        "size": 51.36,
+                                        "price": 4.3
+                                    },
+                                    {
+                                        "size": 0,
+                                        "price": 0
+                                    }
+                                ],
+                                "lay": [
+                                    {
+                                        "size": 121.52,
+                                        "price": 6.8
+                                    },
+                                    {
+                                        "size": 576.51,
+                                        "price": 8
+                                    },
+                                    {
+                                        "size": 114.3,
+                                        "price": 8.6
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                "racingInfo": [],
+                "eventTime": "2026-03-12T08:00:00.000Z",
+                "runnersData": {
+                    "41151668": "Limpopo",
+                    "60551675": "Eastern Cape Linyathi"
+                },
+                "createdAt": "2026-03-11T09:58:27.292Z",
+                "oddsType": "MATCH_ODDS"
+            }
+        ],
+        "bookmakersData": [
+            {
+                "eventId": "35353603",
+                "exEventId": "400202631195657132",
+                "eventName": "Eastern Cape Linyathi v Limpopo",
+                "marketId": "102202631110028454",
+                "exMarketId": "102202631110028454",
+                "marketName": "Bookmaker",
+                "min": 100,
+                "max": 200000,
+                "marketType": "Bookmakers-2",
+                "sequence": 100,
+                "popular": true,
+                "tableFlag": "BOOKMAKERS",
+                "isScore": true,
+                "isSuperFancy": false,
+                "isVoid": 0,
+                "isSettlement": 0,
+                "eventTime": "2026-03-12T08:00:00.000Z",
+                "oddsData": {
+                    "inPlay": true,
+                    "preBet": false,
+                    "betDelay": 2,
+                    "totalMatched": 37450699,
+                    "status": "ONLINE",
+                    "crossMatching": true,
+                    "runners": [
+                        {
+                            "selectionId": "60551675",
+                            "handicap": 0,
+                            "status": "ONLINE",
+                            "price": {
+                                "back": [
+                                    {
+                                        "size": 4899000,
+                                        "price": 16
+                                    },
+                                    {
+                                        "size": 10000000,
+                                        "price": 15
+                                    },
+                                    {
+                                        "size": 15000000,
+                                        "price": 14
+                                    }
+                                ],
+                                "lay": [
+                                    {
+                                        "size": 4985000,
+                                        "price": 19
+                                    },
+                                    {
+                                        "size": 10000000,
+                                        "price": 20
+                                    },
+                                    {
+                                        "size": 15000000,
+                                        "price": 21
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "selectionId": "41151668",
+                            "handicap": 0,
+                            "status": "ONLINE",
+                            "price": {
+                                "back": [
+                                    {
+                                        "size": 949820,
+                                        "price": 526
+                                    },
+                                    {
+                                        "size": 2000000,
+                                        "price": 500
+                                    },
+                                    {
+                                        "size": 3151260,
+                                        "price": 476
+                                    }
+                                ],
+                                "lay": [
+                                    {
+                                        "size": 800000,
+                                        "price": 625
+                                    },
+                                    {
+                                        "size": 1499250,
+                                        "price": 667
+                                    },
+                                    {
+                                        "size": 2100840,
+                                        "price": 714
+                                    }
+                                ]
+                            }
+                        }
+                    ],
+                    "volume": 5000000
+                },
+                "runnersData": {
+                    "41151668": "Limpopo",
+                    "60551675": "Eastern Cape Linyathi"
+                },
+                "createdAt": "2026-03-11T10:00:28.459Z",
+                "oddsType": "BOOKMAKERS"
+            }
+        ],
+        "sportsbookData": [
+            {
+                "eventId": "35353603",
+                "exEventId": "400202631195657132",
+                "eventName": "Eastern Cape Linyathi v Limpopo",
+                "marketId": "10320263111014550",
+                "exMarketId": "10320263111014550",
+                "marketName": "LIM 50 Over Last Digit",
+                "min": 100,
+                "max": 100000,
+                "marketType": "ODDS/EVENS",
+                "sequence": 20,
+                "popular": false,
+                "tableFlag": "SPORTSBOOK",
+                "isScore": true,
+                "isSuperFancy": false,
+                "isVoid": 0,
+                "isSettlement": 0,
+                "oddsData": {
+                    "inPlay": false,
+                    "preBet": false,
+                    "betDelay": 0,
+                    "totalMatched": 13350,
+                    "status": "ONLINE",
+                    "crossMatching": true,
+                    "runners": [
+                        {
+                            "selectionId": "568790",
+                            "handicap": 0,
+                            "status": "ONLINE",
+                            "price": {
+                                "back": [
+                                    {
+                                        "size": 99900,
+                                        "price": 9.6
+                                    },
+                                    {
+                                        "size": 200000,
+                                        "price": 0
+                                    },
+                                    {
+                                        "size": 300000,
+                                        "price": 0
+                                    }
+                                ],
+                                "lay": [
+                                    {
+                                        "size": 100000,
+                                        "price": 0
+                                    },
+                                    {
+                                        "size": 200000,
+                                        "price": 0
+                                    },
+                                    {
+                                        "size": 300000,
+                                        "price": 0
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "selectionId": "5687901",
+                            "handicap": 0,
+                            "status": "ONLINE",
+                            "price": {
+                                "back": [
+                                    {
+                                        "size": 99800,
+                                        "price": 9.6
+                                    },
+                                    {
+                                        "size": 200000,
+                                        "price": 0
+                                    },
+                                    {
+                                        "size": 300000,
+                                        "price": 0
+                                    }
+                                ],
+                                "lay": [
+                                    {
+                                        "size": 100000,
+                                        "price": 0
+                                    },
+                                    {
+                                        "size": 200000,
+                                        "price": 0
+                                    },
+                                    {
+                                        "size": 300000,
+                                        "price": 0
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "selectionId": "5687902",
+                            "handicap": 0,
+                            "status": "ONLINE",
+                            "price": {
+                                "back": [
+                                    {
+                                        "size": 99300,
+                                        "price": 9.6
+                                    },
+                                    {
+                                        "size": 200000,
+                                        "price": 0
+                                    },
+                                    {
+                                        "size": 300000,
+                                        "price": 0
+                                    }
+                                ],
+                                "lay": [
+                                    {
+                                        "size": 100000,
+                                        "price": 0
+                                    },
+                                    {
+                                        "size": 200000,
+                                        "price": 0
+                                    },
+                                    {
+                                        "size": 300000,
+                                        "price": 0
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "selectionId": "5687903",
+                            "handicap": 0,
+                            "status": "ONLINE",
+                            "price": {
+                                "back": [
+                                    {
+                                        "size": 99420,
+                                        "price": 9.6
+                                    },
+                                    {
+                                        "size": 200000,
+                                        "price": 0
+                                    },
+                                    {
+                                        "size": 300000,
+                                        "price": 0
+                                    }
+                                ],
+                                "lay": [
+                                    {
+                                        "size": 100000,
+                                        "price": 0
+                                    },
+                                    {
+                                        "size": 200000,
+                                        "price": 0
+                                    },
+                                    {
+                                        "size": 300000,
+                                        "price": 0
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "selectionId": "5687904",
+                            "handicap": 0,
+                            "status": "ONLINE",
+                            "price": {
+                                "back": [
+                                    {
+                                        "size": 98520,
+                                        "price": 9.6
+                                    },
+                                    {
+                                        "size": 200000,
+                                        "price": 0
+                                    },
+                                    {
+                                        "size": 300000,
+                                        "price": 0
+                                    }
+                                ],
+                                "lay": [
+                                    {
+                                        "size": 100000,
+                                        "price": 0
+                                    },
+                                    {
+                                        "size": 200000,
+                                        "price": 0
+                                    },
+                                    {
+                                        "size": 300000,
+                                        "price": 0
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "selectionId": "5687905",
+                            "handicap": 0,
+                            "status": "ONLINE",
+                            "price": {
+                                "back": [
+                                    {
+                                        "size": 94410,
+                                        "price": 9.6
+                                    },
+                                    {
+                                        "size": 200000,
+                                        "price": 0
+                                    },
+                                    {
+                                        "size": 300000,
+                                        "price": 0
+                                    }
+                                ],
+                                "lay": [
+                                    {
+                                        "size": 100000,
+                                        "price": 0
+                                    },
+                                    {
+                                        "size": 200000,
+                                        "price": 0
+                                    },
+                                    {
+                                        "size": 300000,
+                                        "price": 0
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "selectionId": "5687906",
+                            "handicap": 0,
+                            "status": "ONLINE",
+                            "price": {
+                                "back": [
+                                    {
+                                        "size": 99350,
+                                        "price": 9.6
+                                    },
+                                    {
+                                        "size": 200000,
+                                        "price": 0
+                                    },
+                                    {
+                                        "size": 300000,
+                                        "price": 0
+                                    }
+                                ],
+                                "lay": [
+                                    {
+                                        "size": 100000,
+                                        "price": 0
+                                    },
+                                    {
+                                        "size": 200000,
+                                        "price": 0
+                                    },
+                                    {
+                                        "size": 300000,
+                                        "price": 0
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "selectionId": "5687907",
+                            "handicap": 0,
+                            "status": "ONLINE",
+                            "price": {
+                                "back": [
+                                    {
+                                        "size": 99550,
+                                        "price": 9.6
+                                    },
+                                    {
+                                        "size": 200000,
+                                        "price": 0
+                                    },
+                                    {
+                                        "size": 300000,
+                                        "price": 0
+                                    }
+                                ],
+                                "lay": [
+                                    {
+                                        "size": 100000,
+                                        "price": 0
+                                    },
+                                    {
+                                        "size": 200000,
+                                        "price": 0
+                                    },
+                                    {
+                                        "size": 300000,
+                                        "price": 0
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "selectionId": "5687908",
+                            "handicap": 0,
+                            "status": "ONLINE",
+                            "price": {
+                                "back": [
+                                    {
+                                        "size": 98400,
+                                        "price": 9.6
+                                    },
+                                    {
+                                        "size": 200000,
+                                        "price": 0
+                                    },
+                                    {
+                                        "size": 300000,
+                                        "price": 0
+                                    }
+                                ],
+                                "lay": [
+                                    {
+                                        "size": 100000,
+                                        "price": 0
+                                    },
+                                    {
+                                        "size": 200000,
+                                        "price": 0
+                                    },
+                                    {
+                                        "size": 300000,
+                                        "price": 0
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "selectionId": "5687909",
+                            "handicap": 0,
+                            "status": "ONLINE",
+                            "price": {
+                                "back": [
+                                    {
+                                        "size": 98000,
+                                        "price": 9.6
+                                    },
+                                    {
+                                        "size": 200000,
+                                        "price": 0
+                                    },
+                                    {
+                                        "size": 300000,
+                                        "price": 0
+                                    }
+                                ],
+                                "lay": [
+                                    {
+                                        "size": 100000,
+                                        "price": 0
+                                    },
+                                    {
+                                        "size": 200000,
+                                        "price": 0
+                                    },
+                                    {
+                                        "size": 300000,
+                                        "price": 0
+                                    }
+                                ]
+                            }
+                        }
+                    ],
+                    "volume": 100000
+                },
+                "runnersData": {
+                    "568790": "0",
+                    "5687901": "1",
+                    "5687902": "2",
+                    "5687903": "3",
+                    "5687904": "4",
+                    "5687905": "5",
+                    "5687906": "6",
+                    "5687907": "7",
+                    "5687908": "8",
+                    "5687909": "9"
+                },
+                "eventTime": "2026-03-11T10:01:45.051Z",
+                "createdAt": "2026-03-11T10:01:45.051Z",
+                "oddsType": "SPORTSBOOK"
+            },
+            {
+                "eventId": "35353603",
+                "exEventId": "400202631195657132",
+                "eventName": "Eastern Cape Linyathi v Limpopo",
+                "marketId": "103202631110155124",
+                "exMarketId": "103202631110155124",
+                "marketName": "LIM 44 Over Total Runs (Odds / Evens)",
+                "min": 100,
+                "max": 100000,
+                "marketType": "ODDS/EVENS",
+                "sequence": 20,
+                "popular": false,
+                "tableFlag": "SPORTSBOOK",
+                "isScore": true,
+                "isSuperFancy": false,
+                "isVoid": 0,
+                "isSettlement": 0,
+                "oddsData": {
+                    "inPlay": false,
+                    "preBet": false,
+                    "betDelay": 0,
+                    "totalMatched": 7833,
+                    "status": "ONLINE",
+                    "crossMatching": true,
+                    "runners": [
+                        {
+                            "selectionId": "995566",
+                            "handicap": 0,
+                            "status": "ONLINE",
+                            "price": {
+                                "back": [
+                                    {
+                                        "size": 996192,
+                                        "price": 1.95
+                                    },
+                                    {
+                                        "size": 2000000,
+                                        "price": 1.94
+                                    },
+                                    {
+                                        "size": 3000000,
+                                        "price": 1.93
+                                    }
+                                ],
+                                "lay": [
+                                    {
+                                        "size": 1000000,
+                                        "price": 1.96
+                                    },
+                                    {
+                                        "size": 2000000,
+                                        "price": 1.97
+                                    },
+                                    {
+                                        "size": 3000000,
+                                        "price": 1.98
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "selectionId": "665566",
+                            "handicap": 0,
+                            "status": "ONLINE",
+                            "price": {
+                                "back": [
+                                    {
+                                        "size": 995975,
+                                        "price": 1.95
+                                    },
+                                    {
+                                        "size": 2000000,
+                                        "price": 1.94
+                                    },
+                                    {
+                                        "size": 3000000,
+                                        "price": 1.93
+                                    }
+                                ],
+                                "lay": [
+                                    {
+                                        "size": 1000000,
+                                        "price": 1.96
+                                    },
+                                    {
+                                        "size": 2000000,
+                                        "price": 1.97
+                                    },
+                                    {
+                                        "size": 3000000,
+                                        "price": 1.98
+                                    }
+                                ]
+                            }
+                        }
+                    ],
+                    "volume": 1000000
+                },
+                "runnersData": {
+                    "665566": "EVEN",
+                    "995566": "ODD"
+                },
+                "eventTime": "2026-03-11T10:01:55.125Z",
+                "createdAt": "2026-03-11T10:01:55.125Z",
+                "oddsType": "SPORTSBOOK"
+            },
+            {
+                "eventId": "35353603",
+                "exEventId": "400202631195657132",
+                "eventName": "Eastern Cape Linyathi v Limpopo",
+                "marketId": "103202631110155126",
+                "exMarketId": "103202631110155126",
+                "marketName": "LIM 45 Over Total Runs (Odds / Evens)",
+                "min": 100,
+                "max": 100000,
+                "marketType": "ODDS/EVENS",
+                "sequence": 20,
+                "popular": false,
+                "tableFlag": "SPORTSBOOK",
+                "isScore": true,
+                "isSuperFancy": false,
+                "isVoid": 0,
+                "isSettlement": 0,
+                "oddsData": {
+                    "inPlay": false,
+                    "preBet": false,
+                    "betDelay": 0,
+                    "totalMatched": 400,
+                    "status": "ONLINE",
+                    "crossMatching": true,
+                    "runners": [
+                        {
+                            "selectionId": "995566",
+                            "handicap": 0,
+                            "status": "ONLINE",
+                            "price": {
+                                "back": [
+                                    {
+                                        "size": 999600,
+                                        "price": 1.95
+                                    },
+                                    {
+                                        "size": 2000000,
+                                        "price": 1.94
+                                    },
+                                    {
+                                        "size": 3000000,
+                                        "price": 1.93
+                                    }
+                                ],
+                                "lay": [
+                                    {
+                                        "size": 1000000,
+                                        "price": 1.96
+                                    },
+                                    {
+                                        "size": 2000000,
+                                        "price": 1.97
+                                    },
+                                    {
+                                        "size": 3000000,
+                                        "price": 1.98
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "selectionId": "665566",
+                            "handicap": 0,
+                            "status": "ONLINE",
+                            "price": {
+                                "back": [
+                                    {
+                                        "size": 1000000,
+                                        "price": 1.95
+                                    },
+                                    {
+                                        "size": 2000000,
+                                        "price": 1.94
+                                    },
+                                    {
+                                        "size": 3000000,
+                                        "price": 1.93
+                                    }
+                                ],
+                                "lay": [
+                                    {
+                                        "size": 1000000,
+                                        "price": 1.96
+                                    },
+                                    {
+                                        "size": 2000000,
+                                        "price": 1.97
+                                    },
+                                    {
+                                        "size": 3000000,
+                                        "price": 1.98
+                                    }
+                                ]
+                            }
+                        }
+                    ],
+                    "volume": 1000000
+                },
+                "runnersData": {
+                    "665566": "EVEN",
+                    "995566": "ODD"
+                },
+                "eventTime": "2026-03-11T10:01:55.127Z",
+                "createdAt": "2026-03-11T10:01:55.127Z",
+                "oddsType": "SPORTSBOOK"
+            },
+            {
+                "eventId": "35353603",
+                "exEventId": "400202631195657132",
+                "eventName": "Eastern Cape Linyathi v Limpopo",
+                "marketId": "103202631110155128",
+                "exMarketId": "103202631110155128",
+                "marketName": "LIM 46 Over Total Runs (Odds / Evens)",
+                "min": 100,
+                "max": 100000,
+                "marketType": "ODDS/EVENS",
+                "sequence": 20,
+                "popular": false,
+                "tableFlag": "SPORTSBOOK",
+                "isScore": true,
+                "isSuperFancy": false,
+                "isVoid": 0,
+                "isSettlement": 0,
+                "oddsData": {
+                    "inPlay": false,
+                    "preBet": false,
+                    "betDelay": 0,
+                    "totalMatched": 100,
+                    "status": "ONLINE",
+                    "crossMatching": true,
+                    "runners": [
+                        {
+                            "selectionId": "995566",
+                            "handicap": 0,
+                            "status": "ONLINE",
+                            "price": {
+                                "back": [
+                                    {
+                                        "size": 999900,
+                                        "price": 1.95
+                                    },
+                                    {
+                                        "size": 2000000,
+                                        "price": 1.94
+                                    },
+                                    {
+                                        "size": 3000000,
+                                        "price": 1.93
+                                    }
+                                ],
+                                "lay": [
+                                    {
+                                        "size": 1000000,
+                                        "price": 1.96
+                                    },
+                                    {
+                                        "size": 2000000,
+                                        "price": 1.97
+                                    },
+                                    {
+                                        "size": 3000000,
+                                        "price": 1.98
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "selectionId": "665566",
+                            "handicap": 0,
+                            "status": "ONLINE",
+                            "price": {
+                                "back": [
+                                    {
+                                        "size": 1000000,
+                                        "price": 1.95
+                                    },
+                                    {
+                                        "size": 2000000,
+                                        "price": 1.94
+                                    },
+                                    {
+                                        "size": 3000000,
+                                        "price": 1.93
+                                    }
+                                ],
+                                "lay": [
+                                    {
+                                        "size": 1000000,
+                                        "price": 1.96
+                                    },
+                                    {
+                                        "size": 2000000,
+                                        "price": 1.97
+                                    },
+                                    {
+                                        "size": 3000000,
+                                        "price": 1.98
+                                    }
+                                ]
+                            }
+                        }
+                    ],
+                    "volume": 1000000
+                },
+                "runnersData": {
+                    "665566": "EVEN",
+                    "995566": "ODD"
+                },
+                "eventTime": "2026-03-11T10:01:55.129Z",
+                "createdAt": "2026-03-11T10:01:55.129Z",
+                "oddsType": "SPORTSBOOK"
+            },
+            {
+                "eventId": "35353603",
+                "exEventId": "400202631195657132",
+                "eventName": "Eastern Cape Linyathi v Limpopo",
+                "marketId": "103202631110155131",
+                "exMarketId": "103202631110155131",
+                "marketName": "LIM 47 Over Total Runs (Odds / Evens)",
+                "min": 100,
+                "max": 100000,
+                "marketType": "ODDS/EVENS",
+                "sequence": 20,
+                "popular": false,
+                "tableFlag": "SPORTSBOOK",
+                "isScore": true,
+                "isSuperFancy": false,
+                "isVoid": 0,
+                "isSettlement": 0,
+                "oddsData": {
+                    "inPlay": false,
+                    "preBet": false,
+                    "betDelay": 0,
+                    "totalMatched": 0,
+                    "status": "ONLINE",
+                    "crossMatching": true,
+                    "runners": [
+                        {
+                            "selectionId": "995566",
+                            "handicap": 0,
+                            "status": "ONLINE",
+                            "price": {
+                                "back": [
+                                    {
+                                        "size": 1000000,
+                                        "price": 1.95
+                                    },
+                                    {
+                                        "size": 2000000,
+                                        "price": 1.94
+                                    },
+                                    {
+                                        "size": 3000000,
+                                        "price": 1.93
+                                    }
+                                ],
+                                "lay": [
+                                    {
+                                        "size": 1000000,
+                                        "price": 1.96
+                                    },
+                                    {
+                                        "size": 2000000,
+                                        "price": 1.97
+                                    },
+                                    {
+                                        "size": 3000000,
+                                        "price": 1.98
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "selectionId": "665566",
+                            "handicap": 0,
+                            "status": "ONLINE",
+                            "price": {
+                                "back": [
+                                    {
+                                        "size": 1000000,
+                                        "price": 1.95
+                                    },
+                                    {
+                                        "size": 2000000,
+                                        "price": 1.94
+                                    },
+                                    {
+                                        "size": 3000000,
+                                        "price": 1.93
+                                    }
+                                ],
+                                "lay": [
+                                    {
+                                        "size": 1000000,
+                                        "price": 1.96
+                                    },
+                                    {
+                                        "size": 2000000,
+                                        "price": 1.97
+                                    },
+                                    {
+                                        "size": 3000000,
+                                        "price": 1.98
+                                    }
+                                ]
+                            }
+                        }
+                    ],
+                    "volume": 1000000
+                },
+                "runnersData": {
+                    "665566": "EVEN",
+                    "995566": "ODD"
+                },
+                "eventTime": "2026-03-11T10:01:55.131Z",
+                "createdAt": "2026-03-11T10:01:55.131Z",
+                "oddsType": "SPORTSBOOK"
+            }
+        ],
+        "binaryData": [],
+        "lotteryData": [],
+        "isScore": true
+    },
+    "meta": {
+        "message": "Market List",
+        "status_code": 200,
+        "status": true
+    }
+}

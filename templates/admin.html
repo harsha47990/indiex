@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Indiex — Admin Dashboard</title>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface-2: #1a1a28;
+    --border: #1e1e2e;
+    --primary: #6c5ce7;
+    --primary-hover: #7c6ff7;
+    --text: #e2e2e8;
+    --text-dim: #8888a0;
+    --danger: #ff4757;
+    --danger-hover: #ff6b7a;
+    --success: #2ed573;
+    --warning: #ffa502;
+    --radius: 12px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── Top bar ──────────────────────────────── */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 28px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 50;
+  }
+  .topbar .brand {
+    font-size: 18px; font-weight: 700; letter-spacing: 1.5px;
+    background: linear-gradient(135deg, var(--primary), var(--success));
+    background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .topbar .right { display: flex; align-items: center; gap: 12px; }
+  .topbar .user-label { color: var(--text-dim); font-size: 13px; }
+  .btn-sm {
+    padding: 7px 14px; border: none; border-radius: 6px;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    transition: background .2s;
+  }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-danger:hover { background: var(--danger-hover); }
+
+  /* ── Main content ─────────────────────────── */
+  .container { max-width: 900px; margin: 40px auto; padding: 0 24px; }
+
+  h2 {
+    font-size: 22px; margin-bottom: 24px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  h2 .count {
+    font-size: 13px; background: var(--primary);
+    color: #fff; border-radius: 12px; padding: 2px 10px;
+  }
+
+  /* ── Add user form ────────────────────────── */
+  .add-form {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 28px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr auto auto;
+    gap: 12px;
+    align-items: end;
+  }
+  .add-form .fg { display: flex; flex-direction: column; gap: 4px; }
+  .add-form label {
+    font-size: 11px; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--text-dim);
+  }
+  .add-form input, .add-form select {
+    padding: 10px 12px;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); font-size: 13px;
+    outline: none;
+  }
+  .add-form input:focus, .add-form select:focus { border-color: var(--primary); }
+  .btn-add {
+    padding: 10px 20px; background: var(--primary); color: #fff;
+    border: none; border-radius: 6px; font-weight: 600; font-size: 13px;
+    cursor: pointer; white-space: nowrap;
+  }
+  .btn-add:hover { background: var(--primary-hover); }
+
+  /* ── User table ───────────────────────────── */
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  table {
+    width: 100%; border-collapse: collapse;
+  }
+  th {
+    text-align: left; padding: 12px 16px;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--text-dim); background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 12px 16px; font-size: 13px;
+    border-bottom: 1px solid var(--border);
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(108,92,231,.04); }
+
+  .badge {
+    font-size: 11px; padding: 3px 8px; border-radius: 4px;
+    font-weight: 600; text-transform: uppercase; letter-spacing: .5px;
+  }
+  .badge-admin { background: rgba(108,92,231,.18); color: var(--primary); }
+  .badge-user  { background: rgba(46,213,115,.12); color: var(--success); }
+  .badge-reset {
+    background: rgba(255,165,2,.12); color: var(--warning);
+    font-size: 10px; margin-left: 6px;
+  }
+
+  .btn-delete {
+    padding: 5px 12px; background: transparent;
+    border: 1px solid var(--danger); color: var(--danger);
+    border-radius: 4px; font-size: 11px; cursor: pointer;
+    transition: all .2s;
+  }
+  .btn-delete:hover { background: var(--danger); color: #fff; }
+  .btn-reset {
+    padding: 5px 12px; background: transparent;
+    border: 1px solid var(--primary); color: var(--primary);
+    border-radius: 4px; font-size: 11px; cursor: pointer;
+    transition: all .2s; margin-right: 6px;
+  }
+  .btn-reset:hover { background: var(--primary); color: #fff; }
+
+  .coin-cell {
+    font-weight: 700; font-size: 14px;
+    color: var(--warning); letter-spacing: .5px;
+  }
+  .coin-cell::before { content: '🪙 '; }
+  .btn-coins {
+    padding: 5px 12px; background: transparent;
+    border: 1px solid var(--warning); color: var(--warning);
+    border-radius: 4px; font-size: 11px; cursor: pointer;
+    transition: all .2s;
+  }
+  .btn-coins:hover { background: var(--warning); color: #000; }
+
+  /* ── Modal ───────────────────────────────── */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,.65);
+    display: none; align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 28px 32px;
+    width: 360px; max-width: 92vw;
+  }
+  .modal h3 {
+    font-size: 16px; margin-bottom: 6px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .modal .sub { font-size: 12px; color: var(--text-dim); margin-bottom: 18px; }
+  .modal .balance-display {
+    text-align: center; font-size: 28px; font-weight: 800;
+    color: var(--warning); margin: 14px 0;
+  }
+  .modal .balance-display::before { content: '🪙 '; }
+  .modal input[type=number] {
+    width: 100%; padding: 10px 12px;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); font-size: 14px;
+    outline: none; text-align: center; font-weight: 600;
+  }
+  .modal input[type=number]:focus { border-color: var(--warning); }
+  .modal .btn-row {
+    display: flex; gap: 8px; margin-top: 16px;
+  }
+  .modal .btn-row button {
+    flex: 1; padding: 10px; border: none; border-radius: 6px;
+    font-weight: 600; font-size: 13px; cursor: pointer;
+  }
+  .btn-load { background: var(--warning); color: #000; }
+  .btn-load:hover { opacity: .9; }
+  .btn-deduct { background: var(--danger); color: #fff; }
+  .btn-deduct:hover { opacity: .9; }
+  .btn-cancel { background: var(--surface-2); color: var(--text-dim); }
+  .btn-cancel:hover { color: var(--text); }
+  .quick-amounts {
+    display: flex; gap: 6px; margin: 12px 0;
+    flex-wrap: wrap;
+  }
+  .quick-amounts button {
+    padding: 6px 14px; border: 1px solid var(--border);
+    background: var(--surface-2); color: var(--text);
+    border-radius: 6px; font-size: 12px; cursor: pointer;
+    transition: all .2s;
+  }
+  .quick-amounts button:hover {
+    border-color: var(--warning); color: var(--warning);
+  }
+
+  .toast {
+    position: fixed; bottom: 24px; right: 24px; z-index: 999;
+    padding: 12px 20px; border-radius: 8px; font-size: 13px;
+    color: #fff; opacity: 0; transition: opacity .3s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+  .toast.success { background: var(--success); }
+  .toast.error { background: var(--danger); }
+
+  @media (max-width: 800px) {
+    .add-form {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  @media (max-width: 600px) {
+    .topbar { padding: 10px 16px; }
+    .topbar .brand { font-size: 15px; }
+    .topbar .user-label { font-size: 11px; }
+    .btn-sm { font-size: 11px; padding: 6px 10px; min-height: 38px; }
+    .container { margin: 16px auto; padding: 0 12px; }
+    h2 { font-size: 18px; }
+    .add-form {
+      grid-template-columns: 1fr;
+      padding: 16px;
+    }
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table { min-width: 580px; }
+    th, td { padding: 10px 12px; font-size: 12px; }
+    .modal { width: 92vw; padding: 20px 18px; }
+    .modal h3 { font-size: 15px; }
+    .modal .balance-display { font-size: 22px; }
+    .quick-amounts button { padding: 8px 12px; min-height: 38px; }
+    .modal .btn-row button { min-height: 44px; }
+    .toast { left: 12px; right: 12px; bottom: 12px; text-align: center; }
+  }
+  @media (max-width: 380px) {
+    .topbar { padding: 8px 10px; }
+    .topbar .brand { font-size: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="brand">INDIEX</span>
+  <div class="right">
+    <span class="user-label" id="user-label">admin</span>
+    <button class="btn-sm btn-danger" onclick="logout()">🚪 Logout</button>
+  </div>
+</div>
+
+<div class="container">
+  <h2>👥 User Management <span class="count" id="user-count">0</span></h2>
+
+  <div class="add-form">
+    <div class="fg">
+      <label>Username</label>
+      <input type="text" id="new-username" placeholder="e.g. john.doe" />
+    </div>
+    <div class="fg">
+      <label>Display Name</label>
+      <input type="text" id="new-display" placeholder="e.g. John Doe" />
+    </div>
+    <div class="fg">
+      <label>Temp Password</label>
+      <input type="text" id="new-password" placeholder="Initial password" />
+    </div>
+    <div class="fg">
+      <label>Role</label>
+      <select id="new-role">
+        <option value="user">User</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+    <button class="btn-add" onclick="addUser()">+ Add User</button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Display Name</th>
+          <th>Role</th>
+          <th>Coins</th>
+          <th>Status</th>
+          <th>Created</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="user-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="modal-overlay" id="reset-modal" onclick="if(event.target===this)closeResetModal()">
+  <div class="modal">
+    <h3>🔑 Reset Password</h3>
+    <div class="sub">User: <strong id="reset-user"></strong></div>
+    <p style="font-size:12px;color:var(--text-dim);margin-bottom:14px">
+      Set a new temporary password. The user will be forced to change it on next login.
+      Any active session will be terminated.
+    </p>
+    <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">New Password</label>
+    <div style="position:relative">
+      <input type="password" id="reset-pw-input" placeholder="Temporary password (min 4 chars)" style="
+        width:100%; padding:10px 40px 10px 12px;
+        background:var(--bg); border:1px solid var(--border);
+        border-radius:6px; color:var(--text); font-size:14px; outline:none;
+      " />
+      <button type="button" onclick="toggleResetPw()" style="
+        position:absolute; right:8px; top:50%; transform:translateY(-50%);
+        background:none; border:none; cursor:pointer; font-size:16px;
+      " id="reset-pw-eye">👁</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn-load" style="background:var(--primary);color:#fff" onclick="submitResetPw()">🔑 Reset Password</button>
+      <button class="btn-cancel" onclick="closeResetModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="coins-modal" onclick="if(event.target===this)closeCoinsModal()">
+  <div class="modal">
+    <h3>🪙 Load Coins</h3>
+    <div class="sub">User: <strong id="coin-user"></strong></div>
+    <div class="balance-display" id="coin-balance">0</div>
+    <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Amount</label>
+    <input type="number" id="coin-amount" min="1" value="100" placeholder="Enter amount" />
+    <div class="quick-amounts">
+      <button onclick="document.getElementById('coin-amount').value=50">50</button>
+      <button onclick="document.getElementById('coin-amount').value=100">100</button>
+      <button onclick="document.getElementById('coin-amount').value=250">250</button>
+      <button onclick="document.getElementById('coin-amount').value=500">500</button>
+      <button onclick="document.getElementById('coin-amount').value=1000">1,000</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn-load" onclick="submitCoins(1)">＋ Load</button>
+      <button class="btn-deduct" onclick="submitCoins(-1)">－ Deduct</button>
+      <button class="btn-cancel" onclick="closeCoinsModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function _getCookie(n) {
+  const m = document.cookie.match(new RegExp('(?:^|; )' + n + '=([^;]*)'));
+  return m ? decodeURIComponent(m[1]) : '';
+}
+
+// Session guard
+(function guard() {
+  if (!_getCookie('session_key')) window.location.href = '/';
+})();
+
+document.getElementById('user-label').textContent = _getCookie('username') || 'admin';
+
+function toast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+async function logout() {
+  await fetch('/api/logout', { method: 'POST' });
+  document.cookie = 'session_key=; path=/; max-age=0';
+  document.cookie = 'username=; path=/; max-age=0';
+  document.cookie = 'last_activity=; path=/; max-age=0';
+  window.location.href = '/';
+}
+
+// ── Load users ──────────────────────────────────────────
+
+async function loadUsers() {
+  try {
+    const res = await fetch('/api/admin/users');
+    if (res.status === 401 || res.status === 403) { window.location.href = '/'; return; }
+    const data = await res.json();
+    if (!data.ok) return;
+    renderUsers(data.users);
+  } catch (e) { console.error(e); }
+}
+
+function renderUsers(users) {
+  document.getElementById('user-count').textContent = users.length;
+  const tbody = document.getElementById('user-tbody');
+  tbody.innerHTML = users.map(u => {
+    const roleBadge = u.role === 'admin'
+      ? '<span class="badge badge-admin">Admin</span>'
+      : '<span class="badge badge-user">User</span>';
+    const resetBadge = u.must_reset_password
+      ? '<span class="badge badge-reset">⚠ Must Reset</span>'
+      : '';
+    const created = u.created_at
+      ? new Date(u.created_at).toLocaleDateString()
+      : '—';
+    const coins = u.coins ?? 0;
+    const isSelf = u.username === _getCookie('username');
+    const resetBtn = isSelf
+      ? ''
+      : `<button class="btn-reset" onclick="openResetModal('${u.username}')">🔑 Reset</button>`;
+    const deleteBtn = isSelf
+      ? '<span style="color:var(--text-dim);font-size:11px">you</span>'
+      : `<button class="btn-delete" onclick="deleteUser('${u.username}')">Delete</button>`;
+    return `<tr>
+      <td><strong>${u.username}</strong></td>
+      <td>${u.display_name || '—'}</td>
+      <td>${roleBadge}</td>
+      <td><span class="coin-cell">${coins.toLocaleString()}</span>
+          <button class="btn-coins" onclick="openCoinsModal('${u.username}', ${coins})">± Load</button></td>
+      <td>${resetBadge || '<span style="color:var(--success);font-size:12px">✓ Active</span>'}</td>
+      <td style="color:var(--text-dim)">${created}</td>
+      <td>${resetBtn}${deleteBtn}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Reset password modal ────────────────────────────────
+
+let _resetUser = '';
+
+function openResetModal(username) {
+  _resetUser = username;
+  document.getElementById('reset-user').textContent = username;
+  document.getElementById('reset-pw-input').value = '';
+  document.getElementById('reset-pw-input').type = 'password';
+  document.getElementById('reset-pw-eye').textContent = '👁';
+  document.getElementById('reset-modal').classList.add('open');
+}
+
+function closeResetModal() {
+  document.getElementById('reset-modal').classList.remove('open');
+  _resetUser = '';
+}
+
+function toggleResetPw() {
+  const inp = document.getElementById('reset-pw-input');
+  const eye = document.getElementById('reset-pw-eye');
+  if (inp.type === 'password') { inp.type = 'text'; eye.textContent = '🙈'; }
+  else { inp.type = 'password'; eye.textContent = '👁'; }
+}
+
+async function submitResetPw() {
+  const pw = document.getElementById('reset-pw-input').value;
+  if (!pw || pw.length < 4) { toast('Password must be at least 4 characters', 'error'); return; }
+  try {
+    const res = await fetch(`/api/admin/users/${_resetUser}/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ new_password: pw }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      toast(`Password reset for "${_resetUser}" — must change on next login`);
+      closeResetModal();
+      loadUsers();
+    } else {
+      toast(data.error || 'Failed', 'error');
+    }
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+}
+
+// ── Coins modal ─────────────────────────────────────────
+
+let _coinUser = '';
+
+function openCoinsModal(username, currentCoins) {
+  _coinUser = username;
+  document.getElementById('coin-user').textContent = username;
+  document.getElementById('coin-balance').textContent = currentCoins.toLocaleString();
+  document.getElementById('coin-amount').value = 100;
+  document.getElementById('coins-modal').classList.add('open');
+}
+
+function closeCoinsModal() {
+  document.getElementById('coins-modal').classList.remove('open');
+  _coinUser = '';
+}
+
+async function submitCoins(sign) {
+  const raw = parseInt(document.getElementById('coin-amount').value, 10);
+  if (!raw || raw <= 0) { toast('Enter a positive amount', 'error'); return; }
+  const amount = raw * sign;
+  try {
+    const res = await fetch(`/api/admin/users/${_coinUser}/coins`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      toast(`${sign > 0 ? 'Loaded' : 'Deducted'} ${Math.abs(amount)} coins — new balance: ${data.coins}`);
+      closeCoinsModal();
+      loadUsers();
+    } else {
+      toast(data.error || 'Failed', 'error');
+    }
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+}
+
+// ── Add user ────────────────────────────────────────────
+
+async function addUser() {
+  const username = document.getElementById('new-username').value.trim();
+  const display_name = document.getElementById('new-display').value.trim();
+  const temp_password = document.getElementById('new-password').value;
+  const role = document.getElementById('new-role').value;
+
+  if (!username || !temp_password) {
+    toast('Username and temp password required', 'error');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/admin/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, display_name, temp_password, role }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      toast(`User "${username}" created — they must reset password on first login`);
+      document.getElementById('new-username').value = '';
+      document.getElementById('new-display').value = '';
+      document.getElementById('new-password').value = '';
+      document.getElementById('new-role').value = 'user';
+      loadUsers();
+    } else {
+      toast(data.error || 'Failed to create user', 'error');
+    }
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+}
+
+// ── Delete user ─────────────────────────────────────────
+
+async function deleteUser(username) {
+  if (!confirm(`Delete user "${username}"? This cannot be undone.`)) return;
+  try {
+    const res = await fetch(`/api/admin/users/${username}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (data.ok) {
+      toast(`User "${username}" deleted`);
+      loadUsers();
+    } else {
+      toast(data.error || 'Failed', 'error');
+    }
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+}
+
+// ── Init ────────────────────────────────────────────────
+loadUsers();
+</script>
+</body>
+</html>

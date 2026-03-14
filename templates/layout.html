@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Indiex</title>
+<link rel="icon" type="image/png" href="/static/logo.png" />
+<style>
+  /* ═══════════════════════════════════════════════════════════════════════
+     THEME VARIABLES
+     ═══════════════════════════════════════════════════════════════════════ */
+  [data-theme="dark"] {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface-2: #1a1a28;
+    --border: #1e1e2e;
+    --primary: #6c5ce7;
+    --primary-hover: #7c6ff7;
+    --text: #e2e2e8;
+    --text-dim: #8888a0;
+    --danger: #ff4757;
+    --danger-hover: #ff6b7a;
+    --success: #2ed573;
+    --warning: #ffa502;
+    --radius: 12px;
+    --shadow: 0 2px 12px rgba(0,0,0,.4);
+    --toggle-icon: '🌙';
+  }
+  [data-theme="light"] {
+    --bg: #f0f2f5;
+    --surface: #ffffff;
+    --surface-2: #f5f6f8;
+    --border: #e0e0e8;
+    --primary: #6c5ce7;
+    --primary-hover: #5a4bd6;
+    --text: #1a1a2e;
+    --text-dim: #6b6b80;
+    --danger: #e74c3c;
+    --danger-hover: #c0392b;
+    --success: #27ae60;
+    --warning: #f39c12;
+    --radius: 12px;
+    --shadow: 0 2px 12px rgba(0,0,0,.08);
+    --toggle-icon: '☀️';
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     GLOBAL RESET & BASE
+     ═══════════════════════════════════════════════════════════════════════ */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    transition: background .3s, color .3s;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     TOP PANEL — constant across all pages
+     ═══════════════════════════════════════════════════════════════════════ */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 28px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: var(--shadow);
+    transition: background .3s, border-color .3s;
+  }
+  .topbar .brand {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 20px; font-weight: 800; letter-spacing: 1.5px;
+    background: linear-gradient(135deg, var(--primary), var(--success));
+    background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    cursor: pointer; text-decoration: none;
+  }
+  .topbar .brand-logo {
+    width: 32px; height: 32px; border-radius: 8px;
+    filter: drop-shadow(0 2px 6px rgba(108,92,231,.3));
+    transition: transform .3s;
+  }
+  .topbar .brand:hover .brand-logo { transform: scale(1.1) rotate(-5deg); }
+  .topbar .center-nav {
+    display: flex; align-items: center; gap: 6px;
+  }
+  .topbar .nav-link {
+    padding: 7px 16px; border-radius: 6px;
+    font-size: 13px; font-weight: 600; color: var(--text-dim);
+    text-decoration: none; cursor: pointer;
+    transition: all .2s;
+  }
+  .topbar .nav-link:hover { color: var(--text); background: var(--surface-2); }
+  .topbar .nav-link.active { color: var(--primary); background: rgba(108,92,231,.1); }
+
+  .topbar .right {
+    display: flex; align-items: center; gap: 14px;
+  }
+
+  /* Coin badge */
+  .coin-badge {
+    display: flex; align-items: center; gap: 5px;
+    padding: 5px 12px; border-radius: 20px;
+    background: rgba(255,165,2,.1); border: 1px solid rgba(255,165,2,.25);
+    font-size: 13px; font-weight: 700; color: var(--warning);
+    transition: background .3s, border-color .3s;
+  }
+  .coin-badge::before { content: '🪙'; font-size: 14px; }
+
+  /* Theme toggle */
+  .theme-toggle {
+    width: 38px; height: 38px;
+    border: 1px solid var(--border); border-radius: 50%;
+    background: var(--surface-2); cursor: pointer;
+    font-size: 16px; display: flex; align-items: center; justify-content: center;
+    transition: all .3s;
+  }
+  .theme-toggle:hover { border-color: var(--primary); transform: scale(1.1); }
+
+  /* User pill */
+  .user-pill {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 14px 5px 10px; border-radius: 20px;
+    background: var(--surface-2); border: 1px solid var(--border);
+    font-size: 13px; color: var(--text);
+    transition: background .3s, border-color .3s;
+  }
+  .user-pill .avatar {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--primary); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700;
+  }
+
+  /* Logout button */
+  .btn-logout {
+    padding: 7px 14px; border: none; border-radius: 6px;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    background: var(--danger); color: #fff;
+    transition: background .2s;
+  }
+  .btn-logout:hover { background: var(--danger-hover); }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     PAGE CONTENT AREA
+     ═══════════════════════════════════════════════════════════════════════ */
+  #page-content {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 32px 24px;
+    min-height: calc(100vh - 62px);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     UTILITY CLASSES — available to all pages
+     ═══════════════════════════════════════════════════════════════════════ */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 24px;
+    box-shadow: var(--shadow); transition: background .3s, border-color .3s;
+  }
+  .text-dim { color: var(--text-dim); }
+  .text-center { text-align: center; }
+  .mt-1 { margin-top: 8px; }
+  .mt-2 { margin-top: 16px; }
+  .mt-3 { margin-top: 24px; }
+  .mb-2 { margin-bottom: 16px; }
+
+  .toast {
+    position: fixed; bottom: 24px; right: 24px; z-index: 999;
+    padding: 12px 20px; border-radius: 8px; font-size: 13px;
+    color: #fff; opacity: 0; transition: opacity .3s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+  .toast.success { background: var(--success); }
+  .toast.error { background: var(--danger); }
+</style>
+<link rel="stylesheet" href="/static/css/mobile.css">
+</head>
+<body>
+
+<!-- ═══════════ CONSTANT TOP PANEL ═══════════ -->
+<div class="topbar">
+  <a class="brand" href="/home"><img src="/static/logo.png" alt="" class="brand-logo">INDIEX</a>
+
+  <div class="center-nav" id="nav-links">
+    <a class="nav-link" href="/home">🏠 Home</a>
+    <a class="nav-link" href="/games">🎮 Games</a>
+  </div>
+
+  <div class="right">
+    <div class="coin-badge" id="coin-badge" title="Your coin balance">
+      <span id="coin-count">—</span>
+    </div>
+
+    <button class="theme-toggle" id="theme-toggle" title="Toggle theme"></button>
+
+    <div class="user-pill">
+      <div class="avatar" id="user-avatar"></div>
+      <span id="user-label"></span>
+    </div>
+
+    <button class="btn-logout" onclick="indiex.logout()">🚪 Logout</button>
+
+    <button class="hamburger" id="hamburger-btn" title="Menu" onclick="indiex.toggleDrawer()">☰</button>
+  </div>
+</div>
+
+<!-- ═══════════ MOBILE DRAWER ═══════════ -->
+<div class="drawer-backdrop" id="drawer-backdrop" onclick="indiex.closeDrawer()"></div>
+<div class="mobile-drawer" id="mobile-drawer">
+  <div class="drawer-header">
+    <span style="display:flex;align-items:center;gap:8px;font-size:17px;font-weight:800;background:linear-gradient(135deg,var(--primary),var(--success));background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;"><img src="/static/logo.png" alt="" style="width:28px;height:28px;border-radius:6px;">INDIEX</span>
+    <button class="drawer-close" onclick="indiex.closeDrawer()">✕</button>
+  </div>
+  <a class="drawer-nav-link" href="/home">🏠 Home</a>
+  <a class="drawer-nav-link" href="/games">🎮 Games</a>
+  <div class="drawer-divider"></div>
+  <div class="drawer-footer">
+    <div class="drawer-user">
+      <div class="avatar" id="drawer-avatar"></div>
+      <span id="drawer-user-label"></span>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="theme-toggle" id="drawer-theme-toggle" title="Toggle theme" style="width:36px;height:36px;"></button>
+      <button class="btn-logout" onclick="indiex.logout()" style="font-size:11px;padding:6px 12px;">🚪</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ PAGE CONTENT — replaced per page ═══════════ -->
+<div id="page-content"></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════
+   INDIEX GLOBAL — shared helpers available on every page
+   ═══════════════════════════════════════════════════════════════════════ */
+const indiex = (() => {
+
+  // ── Cookie helpers ─────────────────────────────────────
+  function getCookie(n) {
+    const m = document.cookie.match(new RegExp('(?:^|; )' + n + '=([^;]*)'));
+    return m ? decodeURIComponent(m[1]) : '';
+  }
+  function setCookie(n, v, days = 365) {
+    document.cookie = `${n}=${encodeURIComponent(v)}; path=/; max-age=${days * 86400}`;
+  }
+  function deleteCookie(n) {
+    document.cookie = `${n}=; path=/; max-age=0`;
+  }
+
+  // ── Session guard ──────────────────────────────────────
+  const sessionKey = getCookie('session_key');
+  const username   = getCookie('username');
+  if (!sessionKey) window.location.href = '/';
+
+  // ── Populate top panel ─────────────────────────────────
+  document.getElementById('user-label').textContent = username;
+  const avatar = document.getElementById('user-avatar');
+  avatar.textContent = username ? username.charAt(0).toUpperCase() : '?';
+
+  // ── Theme ──────────────────────────────────────────────
+  const THEME_KEY = 'indiex_theme';
+
+  function getTheme() {
+    return localStorage.getItem(THEME_KEY) || 'dark';
+  }
+  function setTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    localStorage.setItem(THEME_KEY, t);
+    document.getElementById('theme-toggle').textContent = t === 'dark' ? '🌙' : '☀️';
+  }
+  setTheme(getTheme());
+
+  document.getElementById('theme-toggle').addEventListener('click', () => {
+    setTheme(getTheme() === 'dark' ? 'light' : 'dark');
+  });
+
+  // ── Coins ──────────────────────────────────────────────
+  async function fetchCoins() {
+    try {
+      const res = await fetch('/api/user/me');
+      if (res.ok) {
+        const data = await res.json();
+        document.getElementById('coin-count').textContent =
+          (data.coins ?? 0).toLocaleString();
+      }
+    } catch (e) { console.error('Failed to fetch profile', e); }
+  }
+  fetchCoins();
+
+  // ── Toast ──────────────────────────────────────────────
+  function toast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = `toast ${type} show`;
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  // ── Logout ─────────────────────────────────────────────
+  async function logout() {
+    await fetch('/api/logout', { method: 'POST' });
+    deleteCookie('session_key');
+    deleteCookie('username');
+    deleteCookie('last_activity');
+    window.location.href = '/';
+  }
+
+  // ── Nav highlight ──────────────────────────────────────
+  document.querySelectorAll('.nav-link, .drawer-nav-link').forEach(link => {
+    if (link.getAttribute('href') === window.location.pathname) {
+      link.classList.add('active');
+    } else {
+      link.classList.remove('active');
+    }
+  });
+
+  // ── Mobile drawer ─────────────────────────────────────
+  const drawerEl = document.getElementById('mobile-drawer');
+  const backdropEl = document.getElementById('drawer-backdrop');
+
+  // Populate drawer user info
+  const drawerAvatar = document.getElementById('drawer-avatar');
+  const drawerLabel = document.getElementById('drawer-user-label');
+  if (drawerAvatar) drawerAvatar.textContent = username ? username.charAt(0).toUpperCase() : '?';
+  if (drawerLabel) drawerLabel.textContent = username;
+
+  // Drawer theme toggle (mirrors the topbar one)
+  const drawerThemeBtn = document.getElementById('drawer-theme-toggle');
+  if (drawerThemeBtn) {
+    drawerThemeBtn.textContent = getTheme() === 'dark' ? '🌙' : '☀️';
+    drawerThemeBtn.addEventListener('click', () => {
+      setTheme(getTheme() === 'dark' ? 'light' : 'dark');
+      drawerThemeBtn.textContent = getTheme() === 'dark' ? '🌙' : '☀️';
+    });
+  }
+
+  function openDrawer() {
+    if (drawerEl) { drawerEl.classList.add('open'); }
+    if (backdropEl) { backdropEl.classList.add('open'); }
+    document.body.style.overflow = 'hidden';
+  }
+  function closeDrawer() {
+    if (drawerEl) { drawerEl.classList.remove('open'); }
+    if (backdropEl) { backdropEl.classList.remove('open'); }
+    document.body.style.overflow = '';
+  }
+  function toggleDrawer() {
+    if (drawerEl && drawerEl.classList.contains('open')) closeDrawer();
+    else openDrawer();
+  }
+
+  // ── Public API ─────────────────────────────────────────
+  return {
+    getCookie, setCookie, deleteCookie,
+    username, sessionKey,
+    toast, logout, fetchCoins,
+    getTheme, setTheme,
+    openDrawer, closeDrawer, toggleDrawer,
+  };
+})();
+</script>
+
+<!-- ═══════════ PAGE-SPECIFIC SCRIPT (injected by each page) ═══════════ -->
+</body>
+</html>

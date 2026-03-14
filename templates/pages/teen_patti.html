@@ -1,0 +1,343 @@
+<!-- pages/teen_patti.html — Multiplayer Teen Patti (page fragment) -->
+<link rel="stylesheet" href="/static/css/teen_patti.css">
+
+<div class="tp">
+  <a class="tp-back" href="/games">← Back to Games</a>
+
+  <!-- ════════ LOBBY SCREEN ════════ -->
+  <div id="lobby-screen">
+    <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:4px;">
+      <img src="/static/logo.png" alt="" style="width:48px;height:48px;border-radius:12px;filter:drop-shadow(0 2px 10px rgba(108,92,231,.3));" />
+      <h1 class="lobby-title" style="margin-bottom:0;">🃏 Teen Patti</h1>
+    </div>
+    <p class="lobby-sub">Create a room or join an existing one to play with friends</p>
+
+    <div class="lobby-actions">
+      <button class="lbtn" onclick="tp.createRoom()">
+        <span class="icon">🏠</span> Create Room
+      </button>
+      <button class="lbtn" onclick="document.getElementById('join-section').style.display='block'">
+        <span class="icon">🚪</span> Join Room
+      </button>
+    </div>
+
+    <div id="join-section" style="display:none;">
+      <div class="join-input-row">
+        <input id="join-code-input" maxlength="6" placeholder="ROOM CODE"
+               onkeydown="if(event.key==='Enter') tp.joinRoom()" />
+        <button onclick="tp.joinRoom()">Join →</button>
+      </div>
+    </div>
+
+    <div class="rules-link" onclick="document.getElementById('rules-panel').classList.toggle('open')">
+      📖 How to Play — Rules & Card Rankings
+    </div>
+  </div>
+
+  <!-- ═══════ RULES PANEL ═══════ -->
+  <div id="rules-panel" class="rules-panel">
+    <div class="rules-close" onclick="document.getElementById('rules-panel').classList.remove('open')">✕</div>
+    <h2 class="rules-title">📖 Teen Patti — Complete Rules</h2>
+
+    <div class="rules-tabs">
+      <button class="rules-tab active" onclick="showRulesTab(this, 'tab-basics')">🎮 Basics</button>
+      <button class="rules-tab" onclick="showRulesTab(this, 'tab-rankings')">🏆 Rankings</button>
+      <button class="rules-tab" onclick="showRulesTab(this, 'tab-actions')">🎯 Actions</button>
+      <button class="rules-tab" onclick="showRulesTab(this, 'tab-modes')">⚡ Game Modes</button>
+    </div>
+
+    <!-- BASICS -->
+    <div id="tab-basics" class="rules-content active">
+      <div class="rules-card">
+        <h3>🃏 What is Teen Patti?</h3>
+        <p>Teen Patti (Three Cards) is a popular Indian card game similar to 3-Card Poker. Players are dealt cards and bet on who has the best hand.</p>
+      </div>
+      <div class="rules-card">
+        <h3>🎲 How a Round Works</h3>
+        <ol>
+          <li><strong>Room Admin</strong> sets the <em>Table Amount</em> and starts the game</li>
+          <li>Each player is dealt <strong>3 cards</strong> (or 2 in 2-Card mode) face down</li>
+          <li>Players take turns clockwise — you can play <strong>Blind</strong> (without seeing cards) or <strong>Seen</strong> (after seeing cards)</li>
+          <li>Each turn you must bet to stay in, or <strong>Fold</strong> to drop out</li>
+          <li>When only <strong>2 players</strong> remain, either can call a <strong>Show</strong> to compare hands</li>
+          <li>The <strong>winner</strong> takes the entire pot!</li>
+        </ol>
+      </div>
+      <div class="rules-card">
+        <h3>💰 Betting</h3>
+        <ul>
+          <li><strong>Blind bet</strong> = Table Amount (e.g. 10 🪙)</li>
+          <li><strong>Seen bet</strong> = 2× Table Amount (e.g. 20 🪙)</li>
+          <li>Bets go into the <strong>Pot</strong> — winner takes all</li>
+          <li>If you can't afford the bet, you're <strong>auto-folded</strong></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- RANKINGS -->
+    <div id="tab-rankings" class="rules-content">
+      <div class="rules-card">
+        <h3>🏆 Hand Rankings (Highest → Lowest)</h3>
+        <div class="ranking-table">
+          <div class="ranking-row rank-1">
+            <span class="rank-pos">1</span>
+            <span class="rank-name">🔥 Trail (Three of a Kind)</span>
+            <span class="rank-eg">A♠ A♥ A♦</span>
+            <span class="rank-desc">Three cards of the same rank. A-A-A is the highest.</span>
+          </div>
+          <div class="ranking-row rank-2">
+            <span class="rank-pos">2</span>
+            <span class="rank-name">✨ Straight Flush</span>
+            <span class="rank-eg">A♠ K♠ Q♠</span>
+            <span class="rank-desc">Three consecutive cards of the same suit.</span>
+          </div>
+          <div class="ranking-row rank-3">
+            <span class="rank-pos">3</span>
+            <span class="rank-name">📈 Straight (Sequence)</span>
+            <span class="rank-eg">A♠ K♥ Q♦</span>
+            <span class="rank-desc">Three consecutive cards, any suits.</span>
+          </div>
+          <div class="ranking-row rank-4">
+            <span class="rank-pos">4</span>
+            <span class="rank-name">💎 Flush (Color)</span>
+            <span class="rank-eg">K♠ 9♠ 4♠</span>
+            <span class="rank-desc">Three cards of the same suit, not in sequence.</span>
+          </div>
+          <div class="ranking-row rank-5">
+            <span class="rank-pos">5</span>
+            <span class="rank-name">👯 Pair</span>
+            <span class="rank-eg">A♠ A♥ 7♦</span>
+            <span class="rank-desc">Two cards of the same rank. Higher pair wins.</span>
+          </div>
+          <div class="ranking-row rank-6">
+            <span class="rank-pos">6</span>
+            <span class="rank-name">🃏 High Card</span>
+            <span class="rank-eg">A♠ 9♥ 4♦</span>
+            <span class="rank-desc">No combination. Highest card decides.</span>
+          </div>
+        </div>
+      </div>
+      <div class="rules-card">
+        <h3>📊 Straight Order</h3>
+        <p><strong>A-K-Q</strong> (highest) → <strong>A-2-3</strong> (2nd highest) → <strong>K-Q-J</strong> → <strong>Q-J-10</strong> → … → <strong>4-3-2</strong> (lowest)</p>
+        <p class="rules-note">💡 A-2-3 is a special wrap and ranks just below A-K-Q.</p>
+      </div>
+      <div class="rules-card">
+        <h3>⚖️ Tiebreakers</h3>
+        <ul>
+          <li>Same hand type → compare <strong>highest card</strong>, then next, then lowest</li>
+          <li>Exact tie → the player who initiated <strong>Show loses</strong></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ACTIONS -->
+    <div id="tab-actions" class="rules-content">
+      <div class="rules-card">
+        <h3>🙈 Blind</h3>
+        <p>Play without seeing your cards. Costs <strong>1× Table Amount</strong>. You stay "blind" and can see your cards later.</p>
+      </div>
+      <div class="rules-card">
+        <h3>👁️ Seen</h3>
+        <p>Look at your cards. Costs <strong>2× Table Amount</strong> per turn. Once seen, you stay seen.</p>
+      </div>
+      <div class="rules-card">
+        <h3>🏳️ Fold</h3>
+        <p>Drop out of the round. You lose all coins you've bet so far.</p>
+      </div>
+      <div class="rules-card">
+        <h3>🃏 Show</h3>
+        <p>Available when only <strong>2 players remain</strong>. Both players reveal their cards. The better hand wins the pot.</p>
+        <ul>
+          <li>Blind player pays <strong>1× Table Amount</strong> for Show</li>
+          <li>Seen player pays <strong>2× Table Amount</strong> for Show</li>
+        </ul>
+      </div>
+      <div class="rules-card">
+        <h3>🤝 Side Show</h3>
+        <p>Request to compare cards privately with the <strong>previous player</strong>. Both must be "Seen". Unlocked after <strong>3 rounds</strong> of betting.</p>
+        <ul>
+          <li>Only works when <strong>more than 2 players</strong> remain</li>
+          <li>Costs <strong>2× Table Amount</strong></li>
+          <li>Loser is folded, winner continues</li>
+          <li>Both players see each other's cards briefly</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- MODES -->
+    <div id="tab-modes" class="rules-content">
+      <div class="rules-card">
+        <h3>🎯 Normal</h3>
+        <p>Standard 3-card Teen Patti. Best hand wins. No special rules.</p>
+      </div>
+      <div class="rules-card">
+        <h3>✂️ 2-Card Mode</h3>
+        <p>Each player gets <strong>2 cards</strong> instead of 3. The system imagines the <strong>best possible 3rd card</strong> for your hand.</p>
+        <ul>
+          <li>Same rank → <strong>Trail</strong> (phantom makes triple)</li>
+          <li>Same suit + within 2 ranks → <strong>Straight Flush</strong></li>
+          <li>Different suit + within 2 ranks → <strong>Straight</strong></li>
+          <li>Same suit + far apart → <strong>Flush</strong></li>
+          <li>Otherwise → <strong>Pair</strong> (phantom copies higher card)</li>
+        </ul>
+        <p class="rules-note">💡 No High Card exists in 2-card mode — worst case is always a Pair!</p>
+      </div>
+      <div class="rules-card">
+        <h3>💥 4-Card Mode</h3>
+        <p>Each player gets <strong>4 cards</strong> instead of 3. The system evaluates all <strong>4 possible 3-card combinations</strong> and picks the <strong>best hand</strong>.</p>
+        <ul>
+          <li>C(4,3) = 4 combinations checked automatically</li>
+          <li>Standard hand rankings apply (Trail → High Card)</li>
+          <li>More cards = stronger hands on average</li>
+        </ul>
+        <p class="rules-note">💡 You see all 4 cards, but the best 3-card combo determines your hand!</p>
+      </div>
+      <div class="rules-card">
+        <h3>🃏 Joker Mode</h3>
+        <p>One card is flipped as the <strong>Joker</strong>. All cards of that <strong>rank</strong> become <strong>wild cards</strong> — they can represent any card to make your best hand.</p>
+        <p class="rules-note">💡 If you hold a joker card, your hand name shows "(Joker)" next to it.</p>
+      </div>
+      <div class="rules-card">
+        <h3>🔄 Muflis Mode</h3>
+        <p>Everything is <strong>reversed</strong> — the <strong>lowest hand wins</strong>! High Card beats Trail. Aim for the worst possible hand.</p>
+        <p class="rules-note">💡 Same rankings, just flipped. 4-3-2 offsuit is the best hand!</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ ROOM SCREEN ════════ -->
+  <div id="room-screen">
+
+    <!-- Header -->
+    <div class="room-header">
+      <div>
+        <span class="room-code-badge" id="room-code-display" title="Click to copy"
+              onclick="navigator.clipboard.writeText(this.textContent); indiex.toast('Room code copied!')">
+        </span>
+      </div>
+      <div class="room-meta">
+        <span>👥 <strong id="player-count">0</strong> players</span>
+        <span>🏆 <strong id="active-count">0</strong> active</span>
+        <span>🔄 Round <strong id="round-count">0</strong></span>
+        <button class="exit-room-btn" onclick="tp.exitRoom()" title="Leave Room">🚪 Exit</button>
+      </div>
+    </div>
+
+    <!-- Info bar -->
+    <div class="info-bar" id="info-bar" style="display:none;">
+      <div class="stat"><div class="val val-pot" id="pot-val">0</div><div class="lbl">Pot</div></div>
+      <div class="stat"><div class="val val-table" id="table-val">0</div><div class="lbl">Table Amt</div></div>
+      <div class="stat"><div class="val val-seen" id="seen-val">0</div><div class="lbl">Seen Amt</div></div>
+    </div>
+
+    <!-- Admin controls (lobby phase) -->
+    <div class="admin-controls" id="admin-lobby-ctrl" style="display:none;">
+      <h3>⚙️ Room Admin Controls</h3>
+      <div class="admin-row">
+        <label>Table Amount 🪙</label>
+        <input type="number" id="table-amount-input" value="10" min="1" />
+        <label>Mode</label>
+        <select id="game-type-select" class="game-type-select">
+          <option value="normal">🎯 Normal</option>
+          <option value="2card">✂️ 2 Cards</option>
+          <option value="4card">💥 4 Cards</option>
+          <option value="joker">🃏 Joker</option>
+          <option value="muflis">🔄 Muflis</option>
+        </select>
+        <label>Who picks mode</label>
+        <select id="mode-picker-select" class="game-type-select" title="Who chooses the game mode for the next round">
+          <option value="admin">👑 Room Admin</option>
+          <option value="winner">🏆 Last Winner</option>
+        </select>
+        <button class="start-btn" onclick="tp.startGame()">🚀 Start Game</button>
+      </div>
+    </div>
+
+    <!-- Sitting out popup -->
+    <div id="sitting-out-popup" class="sitting-out-popup" style="display:none;"></div>
+
+    <!-- Admin controls (result phase) -->
+    <div class="admin-controls" id="admin-result-ctrl" style="display:none;">
+      <h3>🔄 Round Over</h3>
+      <div class="admin-row">
+        <button class="restart-btn" onclick="tp.restart()">🔄 New Round</button>
+      </div>
+    </div>
+
+    <!-- Players (lobby) -->
+    <div id="lobby-players" class="lobby-players"></div>
+
+    <!-- TABLE -->
+    <div class="tp-table" id="game-table" style="display:none;">
+      <div class="mode-badge" id="mode-badge" style="display:none;"></div>
+      <div class="joker-card-display" id="joker-display" style="display:none;"></div>
+      <div class="table-status" id="table-status">Waiting…</div>
+      <div class="seats" id="seats"></div>
+    </div>
+
+    <!-- My cards -->
+    <div class="my-cards-area" id="my-cards-area" style="display:none;">
+      <div class="my-cards-label">Your Hand</div>
+      <div class="my-cards" id="my-cards"></div>
+      <div class="my-hand-name" id="my-hand-name"></div>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="actions" id="action-buttons" style="display:none;"></div>
+
+    <!-- Event log -->
+    <div class="event-log" id="event-log"></div>
+
+    <!-- Chat -->
+    <div class="chat-panel" id="chat-panel">
+      <div class="chat-header">💬 Chat <span class="chat-badge" id="chat-badge">0</span></div>
+      <div class="chat-messages" id="chat-messages"></div>
+      <div class="chat-input-row">
+        <input id="chat-input" placeholder="Type a message…" maxlength="200"
+               onkeydown="if(event.key==='Enter') tp.sendChat()" />
+        <button onclick="tp.sendChat()">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Result overlay -->
+  <div class="result-overlay" id="result-overlay">
+    <div class="result-box">
+      <div class="trophy">🏆</div>
+      <div class="winner-name" id="result-winner"></div>
+      <div class="winner-detail" id="result-detail"></div>
+      <div class="payout-info" id="result-payout"></div>
+      <button style="margin-top:20px; padding:10px 24px; border:none; border-radius:8px;
+        background:var(--primary); color:#fff; font-weight:700; cursor:pointer;"
+        onclick="document.getElementById('result-overlay').classList.remove('show')">
+        Close
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Sideshow reveal overlay (only shown to the 2 involved players) -->
+<div class="sideshow-overlay" id="sideshow-overlay">
+  <div class="sideshow-box">
+    <div class="sideshow-title">🤝 Side Show</div>
+    <div class="sideshow-hands" id="sideshow-hands"></div>
+    <div class="sideshow-timer" id="sideshow-timer">Auto-closing in 5s…</div>
+    <button style="margin-top:12px; padding:8px 20px; border:none; border-radius:8px;
+      background:var(--primary); color:#fff; font-weight:700; cursor:pointer;"
+      onclick="document.getElementById('sideshow-overlay').classList.remove('show')">
+      Close
+    </button>
+  </div>
+</div>
+
+<script>
+function showRulesTab(btn, tabId) {
+  document.querySelectorAll('.rules-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.rules-content').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(tabId).classList.add('active');
+}
+</script>
+<script src="/static/js/sounds.js"></script>
+<script src="/static/js/teen_patti.js"></script>

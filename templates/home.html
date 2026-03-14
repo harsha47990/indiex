@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Indiex — Home</title>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --border: #1e1e2e;
+    --primary: #6c5ce7;
+    --text: #e2e2e8;
+    --text-dim: #8888a0;
+    --danger: #ff4757;
+    --success: #2ed573;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg); color: var(--text); min-height: 100vh;
+  }
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 28px; background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .topbar .brand {
+    font-size: 18px; font-weight: 700; letter-spacing: 1.5px;
+    background: linear-gradient(135deg, var(--primary), var(--success));
+    background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .topbar .right { display: flex; align-items: center; gap: 12px; }
+  .topbar .user-label { color: var(--text-dim); font-size: 13px; }
+  .btn-sm {
+    padding: 7px 14px; border: none; border-radius: 6px;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+  }
+  .btn-danger { background: var(--danger); color: #fff; }
+
+  .hero {
+    max-width: 600px; margin: 120px auto; text-align: center;
+    padding: 0 24px;
+  }
+  .hero h1 { font-size: 32px; margin-bottom: 12px; }
+  .hero p { color: var(--text-dim); font-size: 15px; line-height: 1.7; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="brand">INDIEX</span>
+  <div class="right">
+    <span class="user-label" id="user-label"></span>
+    <button class="btn-sm btn-danger" onclick="logout()">🚪 Logout</button>
+  </div>
+</div>
+
+<div class="hero">
+  <h1>Hello World 👋</h1>
+  <p id="greeting"></p>
+</div>
+
+<script>
+function _getCookie(n) {
+  const m = document.cookie.match(new RegExp('(?:^|; )' + n + '=([^;]*)'));
+  return m ? decodeURIComponent(m[1]) : '';
+}
+if (!_getCookie('session_key')) window.location.href = '/';
+const _username = _getCookie('username') || '';
+document.getElementById('user-label').textContent = _username;
+document.getElementById('greeting').textContent = `Hello, ${_username}! Welcome to Indiex.`;
+
+async function logout() {
+  await fetch('/api/logout', { method: 'POST' });
+  document.cookie = 'session_key=; path=/; max-age=0';
+  document.cookie = 'username=; path=/; max-age=0';
+  document.cookie = 'last_activity=; path=/; max-age=0';
+  window.location.href = '/';
+}
+</script>
+</body>
+</html>
