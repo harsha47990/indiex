@@ -150,12 +150,6 @@ def _persist_coins(room):
     """Write every player's coin balance back to the DB (single file write)."""
     try:
         batch_sync_coins({p.username: p.coins for p in room.players})
-        # Credit accumulated house commission to the teen_patti account
-        if room.house_commission > 0:
-            load_coins("teen_patti", room.house_commission, loaded_by="commission")
-            logger.info(
-                "House commission %d credited (room %s)", room.house_commission, room.code,
-            )
     except Exception as e:
         logger.error("Failed to persist coins: %s", e)
 

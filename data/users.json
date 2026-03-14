@@ -1,0 +1,82 @@
+{
+  "users": [
+    {
+      "id": "a0000000-0000-0000-0000-000000000001",
+      "username": "admin",
+      "password_hash": "$2b$12$SRWexJGc3ubLSp7rgPqqG.3QZ.tyfSlKfUIPLI5RF/wOjSqK6DVaa",
+      "display_name": "Administrator",
+      "role": "admin",
+      "must_reset_password": false,
+      "coins": 0,
+      "session_key": null,
+      "last_activity": null,
+      "created_at": "2026-03-12T00:00:00Z",
+      "created_by": "system"
+    },
+    {
+      "id": "8feae634-816a-4069-b68b-52a67341eb4d",
+      "username": "temp",
+      "password_hash": "$2b$12$2s69KzGQxM.OcjSVEOUok.WDtexNbyZiQyidpxRjiKqGSUAmz0Qk.",
+      "display_name": "temp",
+      "role": "user",
+      "must_reset_password": false,
+      "coins": 138,
+      "session_key": null,
+      "last_activity": null,
+      "created_at": "2026-03-12T16:41:01.272433+00:00",
+      "created_by": "anurag"
+    },
+    {
+      "id": "3602c192-6db4-438d-8171-e0b115618cf3",
+      "username": "harsha",
+      "password_hash": "$2b$12$kyzOHF.lkfgCAzMAGkSU.u9/gEna1lkhVSlJhIXQVsNIATIRmhn9K",
+      "display_name": "harsha",
+      "role": "user",
+      "must_reset_password": false,
+      "coins": 1712,
+      "session_key": "7332c4ee-c71b-400d-ab1d-176dc33c19cd",
+      "last_activity": 1773439844.7233458,
+      "created_at": "2026-03-12T19:01:07.826309+00:00",
+      "created_by": "admin"
+    },
+    {
+      "id": "506e9e54-6a08-4d82-be8b-f52cbbb8981e",
+      "username": "saikumar",
+      "password_hash": "$2b$12$kyzOHF.lkfgCAzMAGkSU.u9/gEna1lkhVSlJhIXQVsNIATIRmhn9K",
+      "display_name": "saikumar",
+      "role": "user",
+      "must_reset_password": false,
+      "coins": 695,
+      "session_key": "ae69dd3f-bbda-427b-a011-c64bb761e441",
+      "last_activity": 1773439844.734278,
+      "created_at": "2026-03-12T19:02:46.671641+00:00",
+      "created_by": "admin"
+    },
+    {
+      "id": "40c50b53-d514-4388-92b2-f08ca6bf308f",
+      "username": "anurag",
+      "password_hash": "$2b$12$kyzOHF.lkfgCAzMAGkSU.u9/gEna1lkhVSlJhIXQVsNIATIRmhn9K",
+      "display_name": "anurag",
+      "role": "user",
+      "must_reset_password": false,
+      "coins": 2856,
+      "session_key": "4c83b6d0-af67-43c0-8c66-445b06bd608d",
+      "last_activity": 1773439844.741804,
+      "created_at": "2026-03-12T19:03:02.363989+00:00",
+      "created_by": "admin"
+    },
+    {
+      "id": "433f2e18-65c8-43de-a011-877e9e9c0cde",
+      "username": "ravi",
+      "password_hash": "$2b$12$kyzOHF.lkfgCAzMAGkSU.u9/gEna1lkhVSlJhIXQVsNIATIRmhn9K",
+      "display_name": "ravi",
+      "role": "user",
+      "must_reset_password": false,
+      "coins": 1497,
+      "session_key": "d875960a-1750-41ad-8272-ee210d61cdb9",
+      "last_activity": 1773430214.8220685,
+      "created_at": "2026-03-13T10:03:24.129059+00:00",
+      "created_by": "admin"
+    }
+  ]
+}

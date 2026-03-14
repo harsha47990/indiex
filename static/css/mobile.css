@@ -194,32 +194,17 @@
   .big-card.face-up .suit { font-size: 16px !important; }
   .big-card.face-down::after { font-size: 28px !important; }
 
-  /* Action buttons — sticky bar at bottom on mobile */
+  /* Action buttons — stack */
   .actions {
-    position: fixed !important;
-    bottom: 0 !important; left: 0 !important; right: 0 !important;
-    z-index: 100 !important;
-    flex-direction: row !important;
-    flex-wrap: wrap !important;
-    gap: 6px !important;
-    padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px)) !important;
-    margin: 0 !important;
-    background: var(--surface) !important;
-    border-top: 1px solid var(--border) !important;
-    box-shadow: 0 -4px 20px rgba(0,0,0,.4) !important;
-    justify-content: center !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    padding: 0 8px;
   }
   .act-btn {
-    flex: 1 1 auto !important;
-    min-width: 0 !important;
-    padding: 14px 8px !important;
-    font-size: 13px !important;
-    border-radius: 10px !important;
-    white-space: nowrap !important;
-  }
-  /* Add bottom padding to page so sticky bar doesn't cover content */
-  #room-screen {
-    padding-bottom: 90px !important;
+    width: 100% !important;
+    padding: 14px 20px !important;
+    font-size: 15px !important;
+    border-radius: 12px !important;
   }
 
   /* Info bar */
@@ -451,27 +436,9 @@
 
 
 /* ═══════════════════════════════════════════════════════════════════════
-   UTILITY: Smooth scroll + safe areas + pull-to-refresh prevention
+   UTILITY: Smooth scroll for mobile
    ═══════════════════════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
-  html {
-    scroll-behavior: smooth;
-    overscroll-behavior-y: contain; /* prevent pull-to-refresh */
-  }
-  body {
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: contain;
-    padding-top: env(safe-area-inset-top, 0px);
-  }
-  /* Safe area for topbar on notched phones */
-  .topbar {
-    padding-top: calc(10px + env(safe-area-inset-top, 0px)) !important;
-    padding-left: calc(16px + env(safe-area-inset-left, 0px)) !important;
-    padding-right: calc(16px + env(safe-area-inset-right, 0px)) !important;
-  }
-  /* Global tap highlight removal */
-  button, a, input, select, .act-btn, .lbtn, .seat {
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-  }
+  html { scroll-behavior: smooth; }
+  body { -webkit-overflow-scrolling: touch; }
 }

@@ -25,7 +25,7 @@ tp = (() => {
   const $tableVal  = document.getElementById('table-val');
   const $seenVal   = document.getElementById('seen-val');
   const $adminLobby  = document.getElementById('admin-lobby-ctrl');
-  // New-round popup replaces old admin-result-ctrl
+  const $adminResult = document.getElementById('admin-result-ctrl');
   const $lobbyPlayers = document.getElementById('lobby-players');
   const $gameTable = document.getElementById('game-table');
   const $tableStatus = document.getElementById('table-status');
@@ -190,6 +190,7 @@ tp = (() => {
       $myArea.style.display    = 'none';
       $actions.style.display   = 'none';
       $infoBar.style.display   = 'none';
+      $adminResult.style.display = 'none';
       $overlay.classList.remove('show');
 
       // Show lobby players
@@ -237,8 +238,6 @@ tp = (() => {
       $tableStatus.textContent = `${s.current_turn}'s turn`;
       if (s.current_turn === me && prevTurn !== me) {
         playTurnSound();
-        // Vibrate on mobile when it's your turn
-        if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
       }
       prevTurn = s.current_turn;
     } else {
@@ -377,7 +376,7 @@ tp = (() => {
           👁️ Continue Seen (${s.table_amount * 2} 🪙)</button>`;
       }
 
-      btns += `<button class="act-btn fold" onclick="tp.confirmFold()">
+      btns += `<button class="act-btn fold" onclick="tp.doFold()">
         🏳️ Fold</button>`;
 
       if (s.active_count === 2) {
@@ -424,34 +423,18 @@ tp = (() => {
       if (existing) existing.remove();
     }
 
-    // ── Result phase ────────────────
+    // ── Admin result controls ───────
     if (s.phase === 'result') {
+      $adminResult.style.display = isStarter ? 'block' : 'none';
+
       // Only show overlay + sound ONCE per result
       if (!_resultShown) {
         _resultShown = true;
         $overlay.classList.add('show');
         $resWinner.textContent = s.winner;
+        const winPlayer = s.players.find(p => p.username === s.winner);
         $resDetail.textContent = `Total pot: ${s.pot} 🪙`;
         $resPayout.textContent = `${s.winner} receives ${s.pot} 🪙`;
-
-        // Result overlay buttons — starter gets "Next Round", others get "Close"
-        const $resActions = document.getElementById('result-actions');
-        if (isStarter) {
-          $resActions.innerHTML = `
-            <button class="nr-start-btn" style="max-width:200px;padding:12px 24px;font-size:14px;"
-              onclick="tp.openNewRound()">🚀 Next Round</button>
-            <button style="padding:12px 24px;border:none;border-radius:10px;
-              background:var(--surface-2);color:var(--text);font-weight:700;cursor:pointer;
-              border:1px solid var(--border);" 
-              onclick="document.getElementById('result-overlay').classList.remove('show')">
-              Close</button>`;
-        } else {
-          $resActions.innerHTML = `
-            <button style="padding:12px 24px;border:none;border-radius:10px;
-              background:var(--primary);color:#fff;font-weight:700;cursor:pointer;"
-              onclick="document.getElementById('result-overlay').classList.remove('show')">
-              Close</button>`;
-        }
 
         // Victory fanfare
         playWinSound();
@@ -460,8 +443,7 @@ tp = (() => {
         indiex.fetchCoins();
       }
     } else {
-      // Close new-round popup when game starts
-      document.getElementById('newround-overlay').classList.remove('show');
+      $adminResult.style.display = 'none';
       _resultShown = false;
     }
   }
@@ -583,45 +565,10 @@ tp = (() => {
   }
   function doBlind()    { send('blind'); }
   function doSeen()     { send('seen'); }
-  function doFold()     { _closeFoldConfirm(); send('fold'); }
+  function doFold()     { send('fold'); }
   function doShow()     { send('show'); }
   function doSideshow() { send('sideshow'); }
-
-  function confirmFold() {
-    const $fc = document.getElementById('fold-confirm-overlay');
-    if ($fc) { $fc.classList.add('show'); }
-  }
-  function _closeFoldConfirm() {
-    const $fc = document.getElementById('fold-confirm-overlay');
-    if ($fc) { $fc.classList.remove('show'); }
-  }
-  function cancelFold() { _closeFoldConfirm(); }
   function restart()    { send('restart'); }
-
-  function openNewRound() {
-    // Close result overlay, send restart, then show new-round popup
-    $overlay.classList.remove('show');
-    send('restart');
-    // Pre-fill with last used values
-    const $nr = document.getElementById('newround-overlay');
-    if (state) {
-      document.getElementById('nr-table-amount').value = state.table_amount || 10;
-      const $gt = document.getElementById('nr-game-type');
-      if ($gt && state.game_type) $gt.value = state.game_type;
-    }
-    $nr.classList.add('show');
-  }
-
-  function startNextRound() {
-    const amt = parseInt(document.getElementById('nr-table-amount').value) || 10;
-    const gameType = document.getElementById('nr-game-type').value;
-    // Use whatever mode_picker is already set on the room
-    const mp = document.getElementById('mode-picker-select');
-    const modePicker = mp ? mp.value : 'admin';
-    send('start', { table_amount: amt, game_type: gameType, mode_picker: modePicker });
-    document.getElementById('newround-overlay').classList.remove('show');
-  }
-
   function requestCoins() { send('request_coins'); indiex.toast('Checking coins & notifying admin...'); }
 
   function exitRoom() {
@@ -630,6 +577,6 @@ tp = (() => {
     send('exit');
   }
 
-  return { createRoom, joinRoom, startGame, doBlind, doSeen, doFold, doShow, doSideshow, restart, sendChat, exitRoom, requestCoins, confirmFold, cancelFold, openNewRound, startNextRound };
+  return { createRoom, joinRoom, startGame, doBlind, doSeen, doFold, doShow, doSideshow, restart, sendChat, exitRoom, requestCoins };
 })();
 }); // end DOMContentLoaded

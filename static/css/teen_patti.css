@@ -258,8 +258,6 @@
   padding: 12px 24px; border: none; border-radius: 10px;
   font-size: 14px; font-weight: 700; cursor: pointer;
   transition: all .2s; letter-spacing: .5px;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
 }
 .act-btn:disabled { opacity: .3; cursor: not-allowed; }
 .act-btn.blind { background: #74b9ff; color: #1a1a2e; }
@@ -268,79 +266,6 @@
 .act-btn.show { background: #ffd700; color: #1a1a2e; }
 .act-btn.sideshow { background: #a29bfe; color: #1a1a2e; }
 .act-btn:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.2); }
-
-/* ── FOLD CONFIRM OVERLAY ─────────────────── */
-.fold-confirm-overlay {
-  display: none; position: fixed; inset: 0; z-index: 300;
-  background: rgba(0,0,0,.7); backdrop-filter: blur(4px);
-  align-items: center; justify-content: center;
-}
-.fold-confirm-overlay.show { display: flex !important; }
-.fold-confirm-box {
-  background: var(--surface); border: 2px solid #ff4757;
-  border-radius: 20px; padding: 32px 28px; text-align: center;
-  max-width: 340px; width: 90%; animation: pop .3s ease-out;
-}
-.fold-confirm-box .fc-icon { font-size: 48px; margin-bottom: 10px; }
-.fold-confirm-box .fc-title {
-  font-size: 20px; font-weight: 800; color: #ff4757; margin-bottom: 6px;
-}
-.fold-confirm-box .fc-msg {
-  font-size: 13px; color: var(--text-dim); margin-bottom: 20px; line-height: 1.5;
-}
-.fold-confirm-box .fc-btns { display: flex; gap: 12px; justify-content: center; }
-.fold-confirm-box .fc-btn {
-  padding: 12px 28px; border: none; border-radius: 10px;
-  font-size: 15px; font-weight: 700; cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation; min-width: 110px;
-}
-.fold-confirm-box .fc-yes { background: #ff4757; color: #fff; }
-.fold-confirm-box .fc-no { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
-
-/* ── NEW ROUND POPUP ──────────────────────── */
-.newround-overlay {
-  display: none; position: fixed; inset: 0; z-index: 280;
-  background: rgba(0,0,0,.7); backdrop-filter: blur(6px);
-  align-items: center; justify-content: center;
-}
-.newround-overlay.show { display: flex !important; }
-.newround-box {
-  background: var(--surface); border: 2px solid var(--primary);
-  border-radius: 20px; padding: 32px 28px; text-align: center;
-  max-width: 380px; width: 92%; animation: pop .3s ease-out;
-  box-shadow: 0 20px 60px rgba(0,0,0,.5);
-}
-.newround-box .nr-icon { font-size: 48px; margin-bottom: 8px; }
-.newround-box .nr-title {
-  font-size: 22px; font-weight: 800; color: var(--text); margin-bottom: 20px;
-}
-.newround-box .nr-form {
-  display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px;
-  text-align: left;
-}
-.newround-box .nr-field label {
-  font-size: 12px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 1px; color: var(--text-dim); display: block; margin-bottom: 6px;
-}
-.newround-box .nr-field input,
-.newround-box .nr-field select {
-  width: 100%; padding: 12px 14px; border-radius: 10px;
-  background: var(--surface-2); border: 1px solid var(--border);
-  color: var(--text); font-size: 16px; font-weight: 700;
-  outline: none; transition: border .2s;
-  -webkit-tap-highlight-color: transparent;
-}
-.newround-box .nr-field input:focus,
-.newround-box .nr-field select:focus { border-color: var(--primary); }
-.newround-box .nr-start-btn {
-  width: 100%; padding: 14px; border: none; border-radius: 12px;
-  background: var(--success); color: #fff; font-size: 16px; font-weight: 800;
-  cursor: pointer; transition: all .2s;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-}
-.newround-box .nr-start-btn:hover { background: #27ae60; transform: translateY(-1px); }
 
 /* ── ADMIN CONTROLS ───────────────────────── */
 .admin-controls {

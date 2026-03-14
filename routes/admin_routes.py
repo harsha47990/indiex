@@ -2,16 +2,14 @@
 routes/admin_routes.py — Admin user management
 """
 
-import json
 import logging
-from fastapi import APIRouter, Depends, UploadFile, File
-from fastapi.responses import HTMLResponse, JSONResponse, Response
+from fastapi import APIRouter, Depends
+from fastapi.responses import HTMLResponse, JSONResponse
 
 from auth import (
     get_all_users, create_user,
     delete_user, load_coins, admin_reset_password,
 )
-import db
 from dependencies import TEMPLATES_DIR, require_admin
 
 logger = logging.getLogger(__name__)
@@ -140,41 +138,3 @@ async def add_coins(username: str, payload: dict, admin: dict = Depends(require_
         return {"ok": True, "username": username, "coins": new_balance}
     except ValueError as exc:
         return JSONResponse({"ok": False, "error": str(exc)}, status_code=404)
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-#  EXPORT / IMPORT
-# ═══════════════════════════════════════════════════════════════════════════
-
-@router.get("/api/admin/export-users")
-async def export_users(admin: dict = Depends(require_admin)):
-    """Export all users as a downloadable JSON file."""
-    data = db.export_all_users()
-    content = json.dumps(data, indent=2, ensure_ascii=False)
-    return Response(
-        content=content,
-        media_type="application/json",
-        headers={"Content-Disposition": 'attachment; filename="indiex_users.json"'},
-    )
-
-
-@router.post("/api/admin/import-users")
-async def import_users(file: UploadFile = File(...), admin: dict = Depends(require_admin)):
-    """Import users from an uploaded JSON file.
-    Replaces existing users in the file; leaves others untouched."""
-    if not file.filename.endswith(".json"):
-        return JSONResponse({"ok": False, "error": "Only .json files are accepted"}, 400)
-    try:
-        raw = await file.read()
-        data = json.loads(raw)
-    except (json.JSONDecodeError, UnicodeDecodeError) as e:
-        return JSONResponse({"ok": False, "error": f"Invalid JSON: {e}"}, 400)
-
-    ok, err = db.validate_import_data(data)
-    if not ok:
-        return JSONResponse({"ok": False, "error": err}, 400)
-
-    result = db.import_users(data)
-    logger.info("User import by %s — %d imported, %d skipped",
-                admin["username"], result["imported"], len(result["skipped"]))
-    return {"ok": True, **result}
