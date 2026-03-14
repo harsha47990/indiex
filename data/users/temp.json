@@ -1,0 +1,13 @@
+{
+  "id": "8feae634-816a-4069-b68b-52a67341eb4d",
+  "username": "temp",
+  "password_hash": "$2b$12$2s69KzGQxM.OcjSVEOUok.WDtexNbyZiQyidpxRjiKqGSUAmz0Qk.",
+  "display_name": "temp",
+  "role": "user",
+  "must_reset_password": false,
+  "coins": 600,
+  "session_key": "512365d2-8551-42ca-b82b-cb3d2b661554",
+  "last_activity": 1773520680.179443,
+  "created_at": "2026-03-12T16:41:01.272433+00:00",
+  "created_by": "anurag"
+}

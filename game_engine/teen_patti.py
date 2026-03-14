@@ -22,6 +22,7 @@ def _skim_to_pot(room, cost: int):
     """Add bet to pot after silently skimming commission."""
     commission = int(cost * COMMISSION_RATE)
     room.pot += cost - commission
+    room.house_commission += commission
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -79,7 +80,7 @@ def evaluate_hand(cards: list[dict]) -> tuple[int, list[int]]:
         is_straight = True
     elif vals == [12, 1, 0]:  # A-2-3
         is_straight = True
-        straight_vals = [12, 1, 0]  # A-2-3 is 2nd highest straight
+        straight_vals = [12, 1, 0]  # A-2-3 ranks just below A-K-Q but above K-Q-J
 
     # Trail
     if vals[0] == vals[1] == vals[2]:
@@ -309,6 +310,7 @@ class Room:
     joker_card: Optional[dict] = field(default=None)  # revealed joker (joker mode)
     mode_picker: str = "admin"                 # "admin" = admin always picks, "winner" = last winner picks
     last_winner_username: Optional[str] = None  # username of last round's winner
+    house_commission: int = 0                    # accumulated commission this round
 
     # ── helpers ─────────────────────────────────────────────
     def player(self, username: str) -> Optional[Player]:
@@ -762,15 +764,15 @@ def action_sideshow(room: Room, username: str) -> tuple[bool, str]:
         "opponent_cards": list(prev_player.cards),
         "challenger_hand": hand_name(p.cards, room.game_type, jk),
         "opponent_hand": hand_name(prev_player.cards, room.game_type, jk),
-        "loser": username if result < 0 else prev_player.username,
+        "loser": username if result <= 0 else prev_player.username,
     }
 
-    if result >= 0:
-        # Challenger wins (or tie) — previous player folds
+    if result > 0:
+        # Challenger strictly wins — previous player folds
         prev_player.is_folded = True
         msg = f"Side show: {prev_player.username} folds"
     else:
-        # Challenger loses — challenger folds
+        # Tie or challenger loses — challenger folds (initiator loses ties)
         p.is_folded = True
         msg = f"Side show: {username} folds"
 
@@ -863,6 +865,7 @@ def restart_game(room: Room):
     room.last_sideshow = None
     room.last_auto_event = None
     room.joker_card = None
+    room.house_commission = 0
     for p in room.players:
         p.cards = []
         p.is_seen = False
