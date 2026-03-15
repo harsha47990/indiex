@@ -1,7 +1,8 @@
 #!/bin/bash
 # ═══════════════════════════════════════════════════════════════════════
 # deploy_indiex.sh — Deploy Indiex on Ubuntu EC2
-# Usage:  chmod +x deploy_indiex.sh && ./deploy_indiex.sh
+# Run this CMD to deploy:  chmod +x deploy_indiex.sh && ./deploy_indiex.sh
+# Add Custom TCP Rule in EC2 Security Group: add inbound rules to allow Port 80 (HTTP) from 0.0.0.0/0 (anywhere)
 # ═══════════════════════════════════════════════════════════════════════
 
 set -e

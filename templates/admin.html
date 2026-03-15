@@ -441,9 +441,7 @@ function renderUsers(users) {
       : '—';
     const coins = u.coins ?? 0;
     const isSelf = u.username === _getCookie('username');
-    const resetBtn = isSelf
-      ? ''
-      : `<button class="btn-reset" onclick="openResetModal('${u.username}')">🔑 Reset</button>`;
+    const resetBtn = `<button class="btn-reset" onclick="openResetModal('${u.username}')">${isSelf ? '🔐 Change PW' : '🔑 Reset'}</button>`;
     const deleteBtn = isSelf
       ? '<span style="color:var(--text-dim);font-size:11px">you</span>'
       : `<button class="btn-delete" onclick="deleteUser('${u.username}')">Delete</button>`;
