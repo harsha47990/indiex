@@ -1,0 +1,13 @@
+{
+  "id": "033482cb-9a58-432a-9e2c-3f7f04ead4a4",
+  "username": "teen_patti",
+  "password_hash": "$2b$12$w8A1/ZvisasLd6HzTByLruyBadK0APAejuEWO8dYgds96Akqqc0QC",
+  "display_name": "House",
+  "role": "system",
+  "must_reset_password": true,
+  "coins": 6,
+  "session_key": null,
+  "last_activity": null,
+  "created_at": "2026-03-14T19:21:58.193317+00:00",
+  "created_by": "system"
+}

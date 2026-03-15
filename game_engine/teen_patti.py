@@ -18,10 +18,9 @@ logger = logging.getLogger(__name__)
 COMMISSION_RATE = 0.05  # 5% house commission
 
 
-def _skim_to_pot(room, cost: int):
-    """Add bet to pot after silently skimming commission."""
-    commission = int(cost * COMMISSION_RATE)
-    room.pot += cost - commission
+def _add_to_pot(room, cost: int):
+    """Add bet to pot. Commission is taken at end of round."""
+    room.pot += cost
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -79,7 +78,7 @@ def evaluate_hand(cards: list[dict]) -> tuple[int, list[int]]:
         is_straight = True
     elif vals == [12, 1, 0]:  # A-2-3
         is_straight = True
-        straight_vals = [12, 1, 0]  # A-2-3 is 2nd highest straight
+        straight_vals = [12, 1, 0]  # A-2-3 ranks just below A-K-Q but above K-Q-J
 
     # Trail
     if vals[0] == vals[1] == vals[2]:
@@ -246,6 +245,7 @@ class Player:
     cards: list[dict] = field(default_factory=list)
     is_seen: bool = False
     is_folded: bool = False
+    is_viewing: bool = False       # mid-turn: peeked at cards, must decide seen/fold
     total_bet: int = 0          # amount this player has put into pot
     is_connected: bool = True
     is_sitting_out: bool = False   # not enough coins to play this round
@@ -257,6 +257,7 @@ class Player:
             "coins": self.coins,
             "is_seen": self.is_seen,
             "is_folded": self.is_folded,
+            "is_viewing": self.is_viewing,
             "total_bet": self.total_bet,
             "is_connected": self.is_connected,
             "is_sitting_out": self.is_sitting_out,
@@ -266,7 +267,7 @@ class Player:
             if reveal_cards:
                 d["cards"] = self.cards
                 d["hand_name"] = hand_name(self.cards, game_type, joker_rank)
-            elif self.is_seen:
+            elif self.is_seen or self.is_viewing:
                 d["cards"] = self.cards
                 d["hand_name"] = hand_name(self.cards, game_type, joker_rank)
             else:
@@ -309,6 +310,7 @@ class Room:
     joker_card: Optional[dict] = field(default=None)  # revealed joker (joker mode)
     mode_picker: str = "admin"                 # "admin" = admin always picks, "winner" = last winner picks
     last_winner_username: Optional[str] = None  # username of last round's winner
+    house_commission: int = 0                    # accumulated commission this round
 
     # ── helpers ─────────────────────────────────────────────
     def player(self, username: str) -> Optional[Player]:
@@ -582,6 +584,7 @@ def start_game(room: Room, table_amount: int, game_type: str = "normal") -> tupl
         p.cards = []
         p.is_seen = False
         p.is_folded = p.is_sitting_out   # sitting out = auto-folded
+        p.is_viewing = False
         p.total_bet = 0
 
     # Deal only to eligible players
@@ -596,6 +599,13 @@ def start_game(room: Room, table_amount: int, game_type: str = "normal") -> tupl
     room.joker_card = None
     if game_type == "joker" and room.deck:
         room.joker_card = room.deck.pop()
+
+    # Ante: deduct 1× table_amount from every eligible player
+    for p in room.players:
+        if not p.is_sitting_out:
+            p.coins -= table_amount
+            p.total_bet += table_amount
+            _add_to_pot(room, table_amount)
 
     # First turn = next player clockwise from last_winner_index (skip sitting-out)
     room.current_turn = (room.last_winner_index + 1) % len(room.players)
@@ -631,6 +641,8 @@ def action_blind(room: Room, username: str) -> tuple[bool, str]:
     cp = room.current_player()
     if not cp or cp.username != username:
         return False, "Not your turn"
+    if p.is_seen or p.is_viewing:
+        return False, "Cannot play blind after viewing cards"
 
     cost = room.table_amount
     if p.coins < cost:
@@ -638,12 +650,28 @@ def action_blind(room: Room, username: str) -> tuple[bool, str]:
 
     p.coins -= cost
     p.total_bet += cost
-    _skim_to_pot(room, cost)
+    _add_to_pot(room, cost)
 
     room.advance_turn()
     _check_auto_win(room)
     return True, f"Played blind — paid {cost}"
 
+def action_view(room: Room, username: str) -> tuple[bool, str]:
+    """View cards — free peek. Player must then Play Seen or Fold (same turn)."""
+    p = room.player(username)
+    if not p or p.is_folded:
+        return False, "Cannot act"
+    cp = room.current_player()
+    if not cp or cp.username != username:
+        return False, "Not your turn"
+    if p.is_seen:
+        return False, "Already seen"
+    if p.is_viewing:
+        return False, "Already viewing \u2014 choose Play Seen or Fold"
+
+    p.is_viewing = True
+    # No cost, no turn advance \u2014 player must still act
+    return True, f"\U0001f440 {username} is peeking at their cards\u2026"
 
 def action_seen(room: Room, username: str) -> tuple[bool, str]:
     """See cards — pay 2× table amount, reveal own cards."""
@@ -657,11 +685,11 @@ def action_seen(room: Room, username: str) -> tuple[bool, str]:
     cost = room.seen_amount()
     if p.coins < cost:
         return False, f"Not enough coins (need {cost})"
-
+    p.is_viewing = False
     p.is_seen = True
     p.coins -= cost
     p.total_bet += cost
-    _skim_to_pot(room, cost)
+    _add_to_pot(room, cost)
 
     room.advance_turn()
     _check_auto_win(room)
@@ -677,6 +705,7 @@ def action_fold(room: Room, username: str) -> tuple[bool, str]:
     if not cp or cp.username != username:
         return False, "Not your turn"
 
+    p.is_viewing = False
     p.is_folded = True
     room.advance_turn()
     _check_auto_win(room)
@@ -688,6 +717,8 @@ def action_show(room: Room, username: str) -> tuple[bool, str]:
     p = room.player(username)
     if not p or p.is_folded:
         return False, "Cannot act"
+    if p.is_viewing:
+        return False, "Finish viewing first — choose Play Seen or Fold"
     cp = room.current_player()
     if not cp or cp.username != username:
         return False, "Not your turn"
@@ -701,7 +732,7 @@ def action_show(room: Room, username: str) -> tuple[bool, str]:
 
     p.coins -= cost
     p.total_bet += cost
-    _skim_to_pot(room, cost)
+    _add_to_pot(room, cost)
 
     # Find opponent
     active = room.active_players()
@@ -723,6 +754,8 @@ def action_sideshow(room: Room, username: str) -> tuple[bool, str]:
     p = room.player(username)
     if not p or p.is_folded or not p.is_seen:
         return False, "Must be seen to request side show"
+    if p.is_viewing:
+        return False, "Finish viewing first — choose Play Seen or Fold"
     cp = room.current_player()
     if not cp or cp.username != username:
         return False, "Not your turn"
@@ -748,7 +781,7 @@ def action_sideshow(room: Room, username: str) -> tuple[bool, str]:
 
     p.coins -= cost
     p.total_bet += cost
-    _skim_to_pot(room, cost)
+    _add_to_pot(room, cost)
 
     # Compare
     jk = room.joker_card["rank"] if room.joker_card else None
@@ -762,15 +795,15 @@ def action_sideshow(room: Room, username: str) -> tuple[bool, str]:
         "opponent_cards": list(prev_player.cards),
         "challenger_hand": hand_name(p.cards, room.game_type, jk),
         "opponent_hand": hand_name(prev_player.cards, room.game_type, jk),
-        "loser": username if result < 0 else prev_player.username,
+        "loser": username if result <= 0 else prev_player.username,
     }
 
-    if result >= 0:
-        # Challenger wins (or tie) — previous player folds
+    if result > 0:
+        # Challenger strictly wins — previous player folds
         prev_player.is_folded = True
         msg = f"Side show: {prev_player.username} folds"
     else:
-        # Challenger loses — challenger folds
+        # Tie or challenger loses — challenger folds (initiator loses ties)
         p.is_folded = True
         msg = f"Side show: {username} folds"
 
@@ -824,10 +857,14 @@ def _check_auto_win(room: Room):
 
 
 def _award_winner(room: Room, winner_username: str):
-    """Award pot to winner and move to RESULT phase."""
+    """Award pot to winner and move to RESULT phase.
+    Commission is taken from the total pot here (not per-bet)."""
+    commission = int(room.pot * COMMISSION_RATE)
+    payout = room.pot - commission
+    room.house_commission = commission
     winner = room.player(winner_username)
     if winner:
-        winner.coins += room.pot
+        winner.coins += payout
     room.winner = winner_username
     room.last_winner_username = winner_username
     room.phase = RoomPhase.RESULT
@@ -863,10 +900,12 @@ def restart_game(room: Room):
     room.last_sideshow = None
     room.last_auto_event = None
     room.joker_card = None
+    room.house_commission = 0
     for p in room.players:
         p.cards = []
         p.is_seen = False
         p.is_folded = False
+        p.is_viewing = False
         p.is_sitting_out = False
         p.total_bet = 0
     logger.info("Room %s reset to lobby", room.code)

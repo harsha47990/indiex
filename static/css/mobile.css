@@ -194,17 +194,32 @@
   .big-card.face-up .suit { font-size: 16px !important; }
   .big-card.face-down::after { font-size: 28px !important; }
 
-  /* Action buttons — stack */
+  /* Action buttons — sticky bar at bottom on mobile */
   .actions {
-    flex-direction: column !important;
-    gap: 8px !important;
-    padding: 0 8px;
+    position: fixed !important;
+    bottom: 0 !important; left: 0 !important; right: 0 !important;
+    z-index: 100 !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px)) !important;
+    margin: 0 !important;
+    background: var(--surface) !important;
+    border-top: 1px solid var(--border) !important;
+    box-shadow: 0 -4px 20px rgba(0,0,0,.4) !important;
+    justify-content: center !important;
   }
   .act-btn {
-    width: 100% !important;
-    padding: 14px 20px !important;
-    font-size: 15px !important;
-    border-radius: 12px !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    padding: 14px 8px !important;
+    font-size: 13px !important;
+    border-radius: 10px !important;
+    white-space: nowrap !important;
+  }
+  /* Add bottom padding to page so sticky bar doesn't cover content */
+  #room-screen {
+    padding-bottom: 90px !important;
   }
 
   /* Info bar */
@@ -236,13 +251,20 @@
     width: 100% !important;
   }
 
-  /* Room header */
+  /* Room header — single line, shrink to fit */
   .room-header {
-    flex-direction: column !important;
-    align-items: flex-start !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
     gap: 8px !important;
+    overflow-x: auto;
   }
-  .room-meta { flex-wrap: wrap; gap: 10px !important; font-size: 12px !important; }
+  .room-code-badge {
+    font-size: 12px !important; padding: 3px 8px !important;
+    letter-spacing: 2px !important;
+  }
+  .room-stat { font-size: 11px !important; }
+  .exit-room-btn { font-size: 11px !important; padding: 4px 10px !important; }
 
   /* Result overlay */
   .result-box {
@@ -384,12 +406,7 @@
     width: 100% !important;
   }
 
-  /* Room code badge */
-  .room-code-badge {
-    font-size: 15px !important;
-    padding: 5px 12px !important;
-    letter-spacing: 2px !important;
-  }
+  /* Room code badge — handled in main mobile block */
 
   /* Sideshow hands stack on tiny phones */
   .sideshow-hands {
@@ -436,9 +453,27 @@
 
 
 /* ═══════════════════════════════════════════════════════════════════════
-   UTILITY: Smooth scroll for mobile
+   UTILITY: Smooth scroll + safe areas + pull-to-refresh prevention
    ═══════════════════════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
-  html { scroll-behavior: smooth; }
-  body { -webkit-overflow-scrolling: touch; }
+  html {
+    scroll-behavior: smooth;
+    overscroll-behavior-y: contain; /* prevent pull-to-refresh */
+  }
+  body {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  /* Safe area for topbar on notched phones */
+  .topbar {
+    padding-top: calc(10px + env(safe-area-inset-top, 0px)) !important;
+    padding-left: calc(16px + env(safe-area-inset-left, 0px)) !important;
+    padding-right: calc(16px + env(safe-area-inset-right, 0px)) !important;
+  }
+  /* Global tap highlight removal */
+  button, a, input, select, .act-btn, .lbtn, .seat {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
 }

@@ -25,7 +25,7 @@ tp = (() => {
   const $tableVal  = document.getElementById('table-val');
   const $seenVal   = document.getElementById('seen-val');
   const $adminLobby  = document.getElementById('admin-lobby-ctrl');
-  const $adminResult = document.getElementById('admin-result-ctrl');
+  // New-round popup replaces old admin-result-ctrl
   const $lobbyPlayers = document.getElementById('lobby-players');
   const $gameTable = document.getElementById('game-table');
   const $tableStatus = document.getElementById('table-status');
@@ -93,6 +93,8 @@ tp = (() => {
     ws.onopen = () => {
       $lobby.style.display = 'none';
       $room.style.display = 'block';
+      const $backLink = document.getElementById('tp-back-link');
+      if ($backLink) $backLink.style.display = 'none';
       $roomCode.textContent = roomCode;
       addLog('Connected to room ' + roomCode);
       // Heartbeat keepalive — keeps tunnel/proxy from killing idle connections
@@ -138,6 +140,8 @@ tp = (() => {
         if (ws) { try { ws.close(); } catch(e) {} }
         $room.style.display = 'none';
         $lobby.style.display = 'block';
+        const $bl = document.getElementById('tp-back-link');
+        if ($bl) $bl.style.display = '';
       }
     };
 
@@ -176,10 +180,10 @@ tp = (() => {
     // Counts
     $playerCnt.textContent = s.players.length;
     $activeCnt.textContent = s.active_count;
-    $roundCnt.textContent  = s.round_count;
+    $roundCnt.textContent  = s.turn_number || 0;
 
     // Keep topbar coin badge in sync with live game state
-    if (myPlayer) {
+    if (myPlayer && myPlayer.coins != null) {
       const $topCoins = document.getElementById('coin-count');
       if ($topCoins) $topCoins.textContent = myPlayer.coins.toLocaleString();
     }
@@ -190,7 +194,6 @@ tp = (() => {
       $myArea.style.display    = 'none';
       $actions.style.display   = 'none';
       $infoBar.style.display   = 'none';
-      $adminResult.style.display = 'none';
       $overlay.classList.remove('show');
 
       // Show lobby players
@@ -238,6 +241,8 @@ tp = (() => {
       $tableStatus.textContent = `${s.current_turn}'s turn`;
       if (s.current_turn === me && prevTurn !== me) {
         playTurnSound();
+        // Vibrate on mobile when it's your turn
+        if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
       }
       prevTurn = s.current_turn;
     } else {
@@ -284,9 +289,10 @@ tp = (() => {
       const isTurn = s.current_turn === p.username && s.phase === 'playing';
       let statusClass = '';
       let statusText  = '';
-      if (p.is_folded)     { statusClass = 'fold'; statusText = 'FOLDED'; }
-      else if (p.is_seen)  { statusClass = 'seen'; statusText = 'SEEN'; }
-      else                  { statusClass = 'blind'; statusText = 'BLIND'; }
+      if (p.is_folded)      { statusClass = 'fold'; statusText = 'FOLDED'; }
+      else if (p.is_viewing) { statusClass = 'viewing'; statusText = 'VIEWING'; }
+      else if (p.is_seen)   { statusClass = 'seen'; statusText = 'SEEN'; }
+      else                   { statusClass = 'blind'; statusText = 'BLIND'; }
 
       // Cards
       let cardsHTML = '';
@@ -354,7 +360,7 @@ tp = (() => {
         if (s.game_type === 'muflis') hn += ' (lower is better!)';
         $myHand.textContent = hn;
       } else {
-        $myHand.textContent = myPlayer.cards[0].rank !== '?' ? '' : '(Play Seen to reveal)';
+        $myHand.textContent = myPlayer.cards[0].rank !== '?' ? '' : '(View cards to peek)';
       }
     } else {
       $myCards.innerHTML = '';
@@ -366,28 +372,38 @@ tp = (() => {
       $actions.style.display = 'flex';
       let btns = '';
 
-      if (!myPlayer.is_seen) {
+      if (myPlayer.is_viewing) {
+        // Mid-view: player peeked at cards, now must Play Seen or Fold
+        btns += `<button class="act-btn seen" onclick="tp.doSeen()">
+          👁️ Play Seen (${s.table_amount * 2} 🪙)</button>`;
+        btns += `<button class="act-btn fold" onclick="tp.confirmFold()">
+          🏳️ Fold</button>`;
+      } else if (!myPlayer.is_seen) {
+        // Blind: Play Blind or View Cards
         btns += `<button class="act-btn blind" onclick="tp.doBlind()">
           🙈 Play Blind (${s.table_amount} 🪙)</button>`;
-        btns += `<button class="act-btn seen" onclick="tp.doSeen()">
-          👁️ Seen (${s.table_amount * 2} 🪙)</button>`;
+        btns += `<button class="act-btn view" onclick="tp.doView()">
+          👀 View Cards</button>`;
+        btns += `<button class="act-btn fold" onclick="tp.confirmFold()">
+          🏳️ Fold</button>`;
+        if (s.active_count === 2) {
+          btns += `<button class="act-btn show" onclick="tp.doShow()">
+            🃏 Show (${s.table_amount} 🪙)</button>`;
+        }
       } else {
+        // Seen: normal seen actions
         btns += `<button class="act-btn seen" onclick="tp.doSeen()">
           👁️ Continue Seen (${s.table_amount * 2} 🪙)</button>`;
-      }
-
-      btns += `<button class="act-btn fold" onclick="tp.doFold()">
-        🏳️ Fold</button>`;
-
-      if (s.active_count === 2) {
-        const showCost = myPlayer.is_seen ? s.table_amount * 2 : s.table_amount;
-        btns += `<button class="act-btn show" onclick="tp.doShow()">
-          🃏 Show (${showCost} 🪙)</button>`;
-      }
-
-      if (s.side_show_unlocked && myPlayer.is_seen && s.active_count > 2) {
-        btns += `<button class="act-btn sideshow" onclick="tp.doSideshow()">
-          🤝 Side Show (${s.table_amount * 2} 🪙)</button>`;
+        btns += `<button class="act-btn fold" onclick="tp.confirmFold()">
+          🏳️ Fold</button>`;
+        if (s.active_count === 2) {
+          btns += `<button class="act-btn show" onclick="tp.doShow()">
+            🃏 Show (${s.table_amount * 2} 🪙)</button>`;
+        }
+        if (s.side_show_unlocked && s.active_count > 2) {
+          btns += `<button class="act-btn sideshow" onclick="tp.doSideshow()">
+            🤝 Side Show (${s.table_amount * 2} 🪙)</button>`;
+        }
       }
 
       $actions.innerHTML = btns;
@@ -423,18 +439,35 @@ tp = (() => {
       if (existing) existing.remove();
     }
 
-    // ── Admin result controls ───────
+    // ── Result phase ────────────────
+    const $resultBanner = document.getElementById('result-banner');
     if (s.phase === 'result') {
-      $adminResult.style.display = isStarter ? 'block' : 'none';
-
       // Only show overlay + sound ONCE per result
       if (!_resultShown) {
         _resultShown = true;
         $overlay.classList.add('show');
         $resWinner.textContent = s.winner;
-        const winPlayer = s.players.find(p => p.username === s.winner);
         $resDetail.textContent = `Total pot: ${s.pot} 🪙`;
         $resPayout.textContent = `${s.winner} receives ${s.pot} 🪙`;
+
+        // Result overlay buttons — everyone gets "Next Round" (starter) or "Close"
+        const $resActions = document.getElementById('result-actions');
+        if (isStarter) {
+          $resActions.innerHTML = `
+            <button class="nr-start-btn" style="max-width:200px;padding:12px 24px;font-size:14px;"
+              onclick="tp.openNewRound()">🚀 Next Round</button>
+            <button style="padding:12px 24px;border:none;border-radius:10px;
+              background:var(--surface-2);color:var(--text);font-weight:700;cursor:pointer;
+              border:1px solid var(--border);" 
+              onclick="document.getElementById('result-overlay').classList.remove('show')">
+              Close</button>`;
+        } else {
+          $resActions.innerHTML = `
+            <button style="padding:12px 24px;border:none;border-radius:10px;
+              background:var(--primary);color:#fff;font-weight:700;cursor:pointer;"
+              onclick="document.getElementById('result-overlay').classList.remove('show')">
+              Close</button>`;
+        }
 
         // Victory fanfare
         playWinSound();
@@ -442,8 +475,28 @@ tp = (() => {
         // Refresh top bar coins
         indiex.fetchCoins();
       }
+
+      // Persistent banner — always visible during result phase
+      // (safety net when overlay/popup are closed)
+      const starter = s.starter || s.admin;
+      if (isStarter) {
+        $resultBanner.className = 'result-banner starter';
+        $resultBanner.innerHTML = `
+          <div class="rb-title">🏆 Round over — you're up!</div>
+          <button class="rb-btn" onclick="tp.openNewRound()">🚀 Start Next Round</button>`;
+      } else {
+        $resultBanner.className = 'result-banner waiting';
+        $resultBanner.innerHTML = `
+          <div class="rb-waiting">⏳ Waiting for <strong>${starter}</strong> to start the next round…</div>`;
+      }
+      $resultBanner.style.display = 'block';
     } else {
-      $adminResult.style.display = 'none';
+      // Hide banner in non-result phases
+      $resultBanner.style.display = 'none';
+      // Close new-round popup only when game actually starts (not on lobby)
+      if (s.phase === 'playing') {
+        document.getElementById('newround-overlay').classList.remove('show');
+      }
       _resultShown = false;
     }
   }
@@ -564,11 +617,47 @@ tp = (() => {
     send('start', { table_amount: amt, game_type: gameType, mode_picker: modePicker });
   }
   function doBlind()    { send('blind'); }
+  function doView()     { send('view'); }
   function doSeen()     { send('seen'); }
-  function doFold()     { send('fold'); }
+  function doFold()     { _closeFoldConfirm(); send('fold'); }
   function doShow()     { send('show'); }
   function doSideshow() { send('sideshow'); }
+
+  function confirmFold() {
+    const $fc = document.getElementById('fold-confirm-overlay');
+    if ($fc) { $fc.classList.add('show'); }
+  }
+  function _closeFoldConfirm() {
+    const $fc = document.getElementById('fold-confirm-overlay');
+    if ($fc) { $fc.classList.remove('show'); }
+  }
+  function cancelFold() { _closeFoldConfirm(); }
   function restart()    { send('restart'); }
+
+  function openNewRound() {
+    // Close result overlay, send restart, then show new-round popup
+    $overlay.classList.remove('show');
+    send('restart');
+    // Pre-fill with last used values
+    const $nr = document.getElementById('newround-overlay');
+    if (state) {
+      document.getElementById('nr-table-amount').value = state.table_amount || 10;
+      const $gt = document.getElementById('nr-game-type');
+      if ($gt && state.game_type) $gt.value = state.game_type;
+    }
+    $nr.classList.add('show');
+  }
+
+  function startNextRound() {
+    const amt = parseInt(document.getElementById('nr-table-amount').value) || 10;
+    const gameType = document.getElementById('nr-game-type').value;
+    // Use whatever mode_picker is already set on the room
+    const mp = document.getElementById('mode-picker-select');
+    const modePicker = mp ? mp.value : 'admin';
+    send('start', { table_amount: amt, game_type: gameType, mode_picker: modePicker });
+    document.getElementById('newround-overlay').classList.remove('show');
+  }
+
   function requestCoins() { send('request_coins'); indiex.toast('Checking coins & notifying admin...'); }
 
   function exitRoom() {
@@ -577,6 +666,6 @@ tp = (() => {
     send('exit');
   }
 
-  return { createRoom, joinRoom, startGame, doBlind, doSeen, doFold, doShow, doSideshow, restart, sendChat, exitRoom, requestCoins };
+  return { createRoom, joinRoom, startGame, doBlind, doView, doSeen, doFold, doShow, doSideshow, restart, sendChat, exitRoom, requestCoins, confirmFold, cancelFold, openNewRound, startNextRound };
 })();
 }); // end DOMContentLoaded

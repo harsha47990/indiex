@@ -272,7 +272,8 @@
   <div class="add-form">
     <div class="fg">
       <label>Username</label>
-      <input type="text" id="new-username" placeholder="e.g. john.doe" />
+      <input type="text" id="new-username" placeholder="e.g. johndoe" oninput="sanitizeUsername(this); checkDuplicateUsername()" />
+      <span id="username-warn" style="color:#ff4d4d;font-size:12px;display:none;">⚠ Username already exists</span>
     </div>
     <div class="fg">
       <label>Display Name</label>
@@ -290,6 +291,12 @@
       </select>
     </div>
     <button class="btn-add" onclick="addUser()">+ Add User</button>
+  </div>
+
+  <div style="display:flex;gap:10px;margin:12px 0;">
+    <button class="btn-add" onclick="exportUsers()" style="background:#2563eb;">📥 Export Users</button>
+    <button class="btn-add" onclick="document.getElementById('import-file').click()" style="background:#16a34a;">📤 Import Users</button>
+    <input type="file" id="import-file" accept=".json" style="display:none" onchange="importUsers(this)" />
   </div>
 
   <div class="table-wrap">
@@ -391,14 +398,32 @@ async function logout() {
 
 // ── Load users ──────────────────────────────────────────
 
+let _allUsers = [];   // cached for duplicate checking
+
 async function loadUsers() {
   try {
     const res = await fetch('/api/admin/users');
     if (res.status === 401 || res.status === 403) { window.location.href = '/'; return; }
     const data = await res.json();
     if (!data.ok) return;
+    _allUsers = data.users;
     renderUsers(data.users);
   } catch (e) { console.error(e); }
+}
+
+function sanitizeUsername(inp) {
+  // Strip anything that isn't a letter or digit
+  inp.value = inp.value.replace(/[^a-zA-Z0-9]/g, '');
+}
+
+function checkDuplicateUsername() {
+  const inp = document.getElementById('new-username');
+  const warn = document.getElementById('username-warn');
+  const val = inp.value.trim().toLowerCase();
+  const exists = val && _allUsers.some(u => u.username.toLowerCase() === val);
+  warn.style.display = exists ? 'inline' : 'none';
+  inp.style.borderColor = exists ? '#ff4d4d' : '';
+  return exists;
 }
 
 function renderUsers(users) {
@@ -530,6 +555,10 @@ async function addUser() {
     toast('Username and temp password required', 'error');
     return;
   }
+  if (checkDuplicateUsername()) {
+    toast(`Username "${username}" already exists — pick a different one`, 'error');
+    return;
+  }
 
   try {
     const res = await fetch('/api/admin/users', {
@@ -544,6 +573,8 @@ async function addUser() {
       document.getElementById('new-display').value = '';
       document.getElementById('new-password').value = '';
       document.getElementById('new-role').value = 'user';
+      document.getElementById('username-warn').style.display = 'none';
+      document.getElementById('new-username').style.borderColor = '';
       loadUsers();
     } else {
       toast(data.error || 'Failed to create user', 'error');
@@ -563,6 +594,40 @@ async function deleteUser(username) {
       loadUsers();
     } else {
       toast(data.error || 'Failed', 'error');
+    }
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+}
+
+// ── Export users ────────────────────────────────────────
+
+function exportUsers() {
+  window.location.href = '/api/admin/export-users';
+}
+
+// ── Import users ────────────────────────────────────────
+
+async function importUsers(input) {
+  const file = input.files[0];
+  if (!file) return;
+  input.value = '';  // reset so same file can be re-selected
+
+  if (!confirm(`Import users from "${file.name}"?\n\nExisting users in the file will be REPLACED.\nUsers not in the file stay untouched.`)) return;
+
+  const form = new FormData();
+  form.append('file', file);
+
+  try {
+    const res = await fetch('/api/admin/import-users', { method: 'POST', body: form });
+    const data = await res.json();
+    if (data.ok) {
+      let msg = `✅ Imported ${data.imported} user(s)`;
+      if (data.skipped && data.skipped.length) {
+        msg += `\n⚠ Skipped ${data.skipped.length}: ${data.skipped.join(', ')}`;
+      }
+      toast(msg);
+      loadUsers();
+    } else {
+      toast(data.error || 'Import failed', 'error');
     }
   } catch (e) { toast('Error: ' + e.message, 'error'); }
 }

@@ -1,8 +1,8 @@
 <!-- pages/teen_patti.html — Multiplayer Teen Patti (page fragment) -->
-<link rel="stylesheet" href="/static/css/teen_patti.css">
+<link rel="stylesheet" href="/static/css/teen_patti.css?v=10">
 
 <div class="tp">
-  <a class="tp-back" href="/games">← Back to Games</a>
+  <a class="tp-back" id="tp-back-link" href="/games">← Back to Games</a>
 
   <!-- ════════ LOBBY SCREEN ════════ -->
   <div id="lobby-screen">
@@ -209,19 +209,15 @@
   <!-- ════════ ROOM SCREEN ════════ -->
   <div id="room-screen">
 
-    <!-- Header -->
+    <!-- Header (single compact line) -->
     <div class="room-header">
-      <div>
-        <span class="room-code-badge" id="room-code-display" title="Click to copy"
-              onclick="navigator.clipboard.writeText(this.textContent); indiex.toast('Room code copied!')">
-        </span>
-      </div>
-      <div class="room-meta">
-        <span>👥 <strong id="player-count">0</strong> players</span>
-        <span>🏆 <strong id="active-count">0</strong> active</span>
-        <span>🔄 Round <strong id="round-count">0</strong></span>
-        <button class="exit-room-btn" onclick="tp.exitRoom()" title="Leave Room">🚪 Exit</button>
-      </div>
+      <span class="room-code-badge" id="room-code-display" title="Click to copy"
+            onclick="navigator.clipboard.writeText(this.textContent); indiex.toast('Room code copied!')">
+      </span>
+      <span class="room-stat">Players: <strong id="player-count">0</strong></span>
+      <span class="room-stat">Turn: <strong id="round-count">0</strong></span>
+      <strong id="active-count" style="display:none">0</strong>
+      <button class="exit-room-btn" onclick="tp.exitRoom()" title="Leave Room">🚪 Exit</button>
     </div>
 
     <!-- Info bar -->
@@ -257,11 +253,28 @@
     <!-- Sitting out popup -->
     <div id="sitting-out-popup" class="sitting-out-popup" style="display:none;"></div>
 
-    <!-- Admin controls (result phase) -->
-    <div class="admin-controls" id="admin-result-ctrl" style="display:none;">
-      <h3>🔄 Round Over</h3>
-      <div class="admin-row">
-        <button class="restart-btn" onclick="tp.restart()">🔄 New Round</button>
+    <!-- New round popup (shown to starter after result) -->
+    <div class="newround-overlay" id="newround-overlay" style="display:none">
+      <div class="newround-box">
+        <div class="nr-icon">🚀</div>
+        <div class="nr-title">Start Next Round</div>
+        <div class="nr-form">
+          <div class="nr-field">
+            <label>Table Amount 🪙</label>
+            <input type="number" id="nr-table-amount" value="10" min="1" />
+          </div>
+          <div class="nr-field">
+            <label>Game Mode</label>
+            <select id="nr-game-type" class="game-type-select">
+              <option value="normal">🎯 Normal</option>
+              <option value="2card">✂️ 2 Cards</option>
+              <option value="4card">💥 4 Cards</option>
+              <option value="joker">🃏 Joker</option>
+              <option value="muflis">🔄 Muflis</option>
+            </select>
+          </div>
+        </div>
+        <button class="nr-start-btn" onclick="tp.startNextRound()">🚀 Start Game</button>
       </div>
     </div>
 
@@ -286,6 +299,9 @@
     <!-- Action buttons -->
     <div class="actions" id="action-buttons" style="display:none;"></div>
 
+    <!-- Result-phase next-round banner (shown when result overlay is closed) -->
+    <div class="result-banner" id="result-banner" style="display:none;"></div>
+
     <!-- Event log -->
     <div class="event-log" id="event-log"></div>
 
@@ -308,11 +324,7 @@
       <div class="winner-name" id="result-winner"></div>
       <div class="winner-detail" id="result-detail"></div>
       <div class="payout-info" id="result-payout"></div>
-      <button style="margin-top:20px; padding:10px 24px; border:none; border-radius:8px;
-        background:var(--primary); color:#fff; font-weight:700; cursor:pointer;"
-        onclick="document.getElementById('result-overlay').classList.remove('show')">
-        Close
-      </button>
+      <div id="result-actions" style="margin-top:20px;display:flex;gap:10px;justify-content:center;"></div>
     </div>
   </div>
 </div>
@@ -331,6 +343,19 @@
   </div>
 </div>
 
+<!-- Fold confirmation overlay -->
+<div class="fold-confirm-overlay" id="fold-confirm-overlay" style="display:none">
+  <div class="fold-confirm-box">
+    <div class="fc-icon">🏳️</div>
+    <div class="fc-title">Fold?</div>
+    <div class="fc-msg">Are you sure you want to fold?<br>You'll lose all coins you've bet this round.</div>
+    <div class="fc-btns">
+      <button class="fc-btn fc-no" onclick="tp.cancelFold()">Cancel</button>
+      <button class="fc-btn fc-yes" onclick="tp.doFold()">Yes, Fold</button>
+    </div>
+  </div>
+</div>
+
 <script>
 function showRulesTab(btn, tabId) {
   document.querySelectorAll('.rules-tab').forEach(t => t.classList.remove('active'));
@@ -339,5 +364,5 @@ function showRulesTab(btn, tabId) {
   document.getElementById(tabId).classList.add('active');
 }
 </script>
-<script src="/static/js/sounds.js"></script>
-<script src="/static/js/teen_patti.js"></script>
+<script src="/static/js/sounds.js?v=8"></script>
+<script src="/static/js/teen_patti.js?v=10"></script>

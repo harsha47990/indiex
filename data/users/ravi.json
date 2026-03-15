@@ -1,0 +1,13 @@
+{
+  "id": "433f2e18-65c8-43de-a011-877e9e9c0cde",
+  "username": "ravi",
+  "password_hash": "$2b$12$kyzOHF.lkfgCAzMAGkSU.u9/gEna1lkhVSlJhIXQVsNIATIRmhn9K",
+  "display_name": "ravi",
+  "role": "user",
+  "must_reset_password": false,
+  "coins": 1074,
+  "session_key": "15318f18-6d13-44a3-9138-762df7e19878",
+  "last_activity": 1773539825.0737538,
+  "created_at": "2026-03-13T10:03:24.129059+00:00",
+  "created_by": "admin"
+}
