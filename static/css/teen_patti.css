@@ -515,6 +515,7 @@
 .sideshow-hand .sh-card .sh-rank { font-size: 16px; }
 .sideshow-hand .sh-card .sh-suit { font-size: 14px; margin-top: -2px; }
 .sideshow-hand .sh-hand-name { font-size: 11px; color: var(--text-dim); margin-top: 6px; }
+.sideshow-hand .sh-hidden { font-size: 28px; letter-spacing: 6px; opacity: 0.5; padding: 8px 0; }
 .sideshow-timer { margin-top: 16px; font-size: 12px; color: var(--text-dim); }
 
 /* ── EVENT LOG ────────────────────────────── */

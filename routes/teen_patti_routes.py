@@ -7,8 +7,7 @@ REST endpoints for room management + WebSocket for real-time gameplay.
 import asyncio
 import json
 import logging
-import time
-from time import monotonic
+from time import monotonic, time
 
 from fastapi import APIRouter, Cookie, WebSocket, WebSocketDisconnect, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
@@ -142,7 +141,7 @@ def _schedule_turn_timer(room_code: str, room):
     deadline = room.turn_start_time + TURN_TIMEOUT
 
     async def _timer():
-        remaining = deadline - time.time()
+        remaining = deadline - time()
         if remaining > 0:
             await asyncio.sleep(remaining)
         r = get_room(room_code)
@@ -334,10 +333,22 @@ async def _post_action(ws, room_code, room, action, ok, reply):
     await _handle_dc_chain(room_code, room)
 
     # Private sideshow card reveal to both involved players only
+    # + public result announcement (no cards) to everyone else
     if action == "sideshow" and ok and room.last_sideshow:
         ss = room.last_sideshow
         conns = _connections.get(room_code, {})
-        for target in [ss["challenger"], ss["opponent"]]:
+        involved = {ss["challenger"], ss["opponent"]}
+
+        # Public result (no cards) → everyone
+        public_ss = {
+            "challenger": ss["challenger"],
+            "opponent": ss["opponent"],
+            "loser": ss["loser"],
+        }
+        await _broadcast_event(room_code, {"type": "sideshow_result", "data": public_ss})
+
+        # Private card reveal → only the two participants
+        for target in involved:
             tw = conns.get(target)
             if tw:
                 try:

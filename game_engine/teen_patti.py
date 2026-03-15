@@ -5,10 +5,12 @@ All game logic runs here. Clients only send actions; server validates
 everything and broadcasts state.
 """
 
+import bisect
 import random
 import string
 import time
 import logging
+from collections import Counter
 from itertools import combinations
 from enum import IntEnum
 from dataclasses import dataclass, field
@@ -190,23 +192,25 @@ def hand_name_2card(cards: list[dict]) -> str:
     return HAND_NAMES.get(rank, "❓ Unknown")
 
 
+def _evaluate(cards: list[dict], game_type: str = "normal",
+              joker_rank: str | None = None) -> tuple[int, list[int]]:
+    """Dispatch to the correct evaluator based on game type."""
+    if game_type == "2card":
+        return evaluate_hand_2card(cards)
+    if game_type == "4card":
+        return evaluate_hand_4card(cards)
+    if game_type == "joker" and joker_rank:
+        return evaluate_hand_joker(cards, joker_rank)
+    return evaluate_hand(cards)
+
+
 def compare_hands(a: list[dict], b: list[dict],
                   game_type: str = "normal",
                   joker_rank: str | None = None) -> int:
     """Return  1 if a wins,  -1 if b wins,  0 if draw.
     Joker mode: wild cards considered.  Muflis mode: result inverted."""
-    if game_type == "2card":
-        ra, ta = evaluate_hand_2card(a)
-        rb, tb = evaluate_hand_2card(b)
-    elif game_type == "4card":
-        ra, ta = evaluate_hand_4card(a)
-        rb, tb = evaluate_hand_4card(b)
-    elif game_type == "joker" and joker_rank:
-        ra, ta = evaluate_hand_joker(a, joker_rank)
-        rb, tb = evaluate_hand_joker(b, joker_rank)
-    else:
-        ra, ta = evaluate_hand(a)
-        rb, tb = evaluate_hand(b)
+    ra, ta = _evaluate(a, game_type, joker_rank)
+    rb, tb = _evaluate(b, game_type, joker_rank)
     if ra != rb:
         result = 1 if ra > rb else -1
     else:
@@ -226,10 +230,7 @@ def hand_name(cards: list[dict], game_type: str = "normal",
         return hand_name_2card(cards)
     if game_type == "4card":
         return hand_name_4card(cards)
-    if game_type == "joker" and joker_rank:
-        rank, _ = evaluate_hand_joker(cards, joker_rank)
-    else:
-        rank, _ = evaluate_hand(cards)
+    rank, _ = _evaluate(cards, game_type, joker_rank)
     label = HAND_NAMES[rank]
     if game_type == "joker" and joker_rank and any(c["rank"] == joker_rank for c in cards):
         label += " (Joker)"
@@ -254,7 +255,6 @@ def _build_percentile() -> dict[int, int]:
       Trail          : 95–100
     Within each band, hands are ranked among their group.
     """
-    from collections import Counter
     deck = [{"rank": r, "suit": s} for s in SUITS for r in RANKS]
 
     # Collect scores per hand type
@@ -293,8 +293,6 @@ def _build_percentile() -> dict[int, int]:
 _PCT = _build_percentile()                # built once at import
 _PCT_KEYS = sorted(_PCT)                  # for bisect fallback
 
-import bisect as _bisect
-
 
 def hand_strength_pct(cards: list[dict], game_type: str = "normal",
                       joker_rank: str | None = None) -> int:
@@ -302,20 +300,13 @@ def hand_strength_pct(cards: list[dict], game_type: str = "normal",
     For muflis the scale is simply inverted (100 − normal)."""
     if not cards:
         return 0
-    if game_type == "2card":
-        rank, tb = evaluate_hand_2card(cards)
-    elif game_type == "4card":
-        rank, tb = evaluate_hand_4card(cards)
-    elif game_type == "joker" and joker_rank:
-        rank, tb = evaluate_hand_joker(cards, joker_rank)
-    else:
-        rank, tb = evaluate_hand(cards)
+    rank, tb = _evaluate(cards, game_type, joker_rank)
     score = _hand_score(rank, tb)
     # Exact lookup, or nearest lower score via bisect
     if score in _PCT:
         pct = _PCT[score]
     else:
-        idx = _bisect.bisect_right(_PCT_KEYS, score) - 1
+        idx = bisect.bisect_right(_PCT_KEYS, score) - 1
         pct = _PCT[_PCT_KEYS[max(0, idx)]] if idx >= 0 else 0
     if game_type == "muflis":
         pct = 100 - pct
@@ -350,24 +341,20 @@ class Player:
             "is_connected": self.is_connected,
             "is_sitting_out": self.is_sitting_out,
         }
+        show_cards = False
         if for_self and self.cards:
-            # Result phase → always reveal, even if player was blind
-            if reveal_cards:
-                d["cards"] = self.cards
-                d["hand_name"] = hand_name(self.cards, game_type, joker_rank)
-                d["hand_strength"] = hand_strength_pct(self.cards, game_type, joker_rank)
-            elif self.is_seen or self.is_viewing:
-                d["cards"] = self.cards
-                d["hand_name"] = hand_name(self.cards, game_type, joker_rank)
-                d["hand_strength"] = hand_strength_pct(self.cards, game_type, joker_rank)
+            if reveal_cards or self.is_seen or self.is_viewing:
+                show_cards = True
             else:
                 d["cards"] = [{"rank": "?", "suit": "?"} for _ in self.cards]
         elif reveal_cards and self.cards:
+            show_cards = True
+        else:
+            d["card_count"] = len(self.cards)
+        if show_cards:
             d["cards"] = self.cards
             d["hand_name"] = hand_name(self.cards, game_type, joker_rank)
             d["hand_strength"] = hand_strength_pct(self.cards, game_type, joker_rank)
-        else:
-            d["card_count"] = len(self.cards)
         return d
 
 
@@ -415,7 +402,7 @@ class Room:
         return [p for p in self.players if not p.is_folded]
 
     def active_count(self) -> int:
-        return len(self.active_players())
+        return sum(1 for p in self.players if not p.is_folded)
 
     def _next_active(self, idx: int) -> int:
         n = len(self.players)
@@ -910,11 +897,14 @@ def action_sideshow(room: Room, username: str) -> tuple[bool, str]:
     if result > 0:
         # Challenger strictly wins — previous player folds
         prev_player.is_folded = True
-        msg = f"Side show: {prev_player.username} folds"
+        winner, loser = username, prev_player.username
     else:
         # Tie or challenger loses — challenger folds (initiator loses ties)
         p.is_folded = True
-        msg = f"Side show: {username} folds"
+        winner, loser = prev_player.username, username
+
+    msg = (f"🤝 Side Show! {username} challenged {prev_player.username} "
+           f"— {winner} wins, {loser} folds!")
 
     room.advance_turn()
     _check_auto_win(room)

@@ -146,7 +146,13 @@ tp = (() => {
           playChatSound();
         }
       } else if (msg.type === 'sideshow_reveal') {
-        showSideshowReveal(msg.data);
+        showSideshowReveal(msg.data, true);
+      } else if (msg.type === 'sideshow_result') {
+        // Only show public popup if we're NOT one of the participants
+        // (participants get the full card reveal above)
+        if (msg.data.challenger !== me && msg.data.opponent !== me) {
+          showSideshowReveal(msg.data, false);
+        }
       } else if (msg.type === 'reaction') {
         _showFloatingReaction(msg.from, msg.emoji);
       } else if (msg.type === 'exit') {
@@ -319,7 +325,7 @@ tp = (() => {
     }
 
     // ── Render seats ────────────────
-    $seats.innerHTML = s.players.map(p => {
+    $seats.innerHTML = s.players.map((p, pIdx) => {
       const isMe   = p.username === me;
       const isTurn = s.current_turn === p.username && s.phase === 'playing';
       let statusClass = '';
@@ -349,7 +355,7 @@ tp = (() => {
           ${p.username === s.admin ? '<span class="seat-admin-badge">ADMIN</span>' : ''}
           ${isOffline ? '<span class="seat-offline-badge">⛔ OFFLINE</span>' : ''}
           ${isSittingOut ? '<span class="seat-sitting-badge">💸 LOW COINS</span>' : ''}
-          <div class="seat-avatar" style="background:${_COLORS[s.players.indexOf(p) % _COLORS.length]}">${p.username.charAt(0).toUpperCase()}</div>
+          <div class="seat-avatar" style="background:${_COLORS[pIdx % _COLORS.length]}">${p.username.charAt(0).toUpperCase()}</div>
           <div class="seat-name">${p.username}${isMe ? ' (You)' : ''}</div>
           <div class="seat-coins">🪙 ${p.coins.toLocaleString()}</div>
           <div class="seat-status ${isSittingOut ? 'sitting' : statusClass}">${isSittingOut ? 'SITTING OUT' : statusText}</div>
@@ -573,7 +579,7 @@ tp = (() => {
 
   // ── Side-show reveal overlay ────────────────────────────
   let _ssTimer = null;
-  function showSideshowReveal(data) {
+  function showSideshowReveal(data, showCards) {
     const $ssOverlay = document.getElementById('sideshow-overlay');
     const $ssHands   = document.getElementById('sideshow-hands');
     const $ssTimerEl = document.getElementById('sideshow-timer');
@@ -587,19 +593,26 @@ tp = (() => {
       }).join('');
     }
 
+    const challenger = data.challenger;
+    const opponent = data.opponent;
+    const loser = data.loser;
+
     const hands = [
-      { name: data.challenger, cards: data.challenger_cards, handName: data.challenger_hand, isLoser: data.loser === data.challenger },
-      { name: data.opponent,   cards: data.opponent_cards,   handName: data.opponent_hand,   isLoser: data.loser === data.opponent },
+      { name: challenger, cards: data.challenger_cards, handName: data.challenger_hand, isLoser: loser === challenger },
+      { name: opponent,   cards: data.opponent_cards,   handName: data.opponent_hand,   isLoser: loser === opponent },
     ];
 
-    $ssHands.innerHTML = hands.map(h => `
-      <div class="sideshow-hand ${h.isLoser ? 'loser' : 'winner'}">
-        <div class="sh-name">${h.name}${h.name === me ? ' (You)' : ''}</div>
-        <div class="sh-result">${h.isLoser ? '❌ Lost' : '✅ Won'}</div>
-        <div class="sh-cards">${renderCards(h.cards)}</div>
-        <div class="sh-hand-name">${h.handName || ''}</div>
-      </div>
-    `).join('');
+    $ssHands.innerHTML = hands.map(h => {
+      const cardsSection = showCards && h.cards
+        ? `<div class="sh-cards">${renderCards(h.cards)}</div><div class="sh-hand-name">${h.handName || ''}</div>`
+        : `<div class="sh-cards"><div class="sh-hidden">🃠 🃠 🃠</div></div>`;
+      return `
+        <div class="sideshow-hand ${h.isLoser ? 'loser' : 'winner'}">
+          <div class="sh-name">${h.name}${h.name === me ? ' (You)' : ''}</div>
+          <div class="sh-result">${h.isLoser ? '❌ Lost — Folded' : '✅ Won'}</div>
+          ${cardsSection}
+        </div>`;
+    }).join('');
 
     $ssOverlay.classList.add('show');
 
