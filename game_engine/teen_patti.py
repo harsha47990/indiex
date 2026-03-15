@@ -236,6 +236,92 @@ def hand_name(cards: list[dict], game_type: str = "normal",
     return label
 
 
+def _hand_score(rank: int, tiebreakers: list[int]) -> int:
+    """Convert (HandRank, tiebreakers) → single comparable integer."""
+    tb = list(tiebreakers) + [0] * (3 - len(tiebreakers))
+    return rank * (13 ** 3) + tb[0] * (13 ** 2) + tb[1] * 13 + tb[2]
+
+
+def _build_percentile() -> dict[int, int]:
+    """Enumerate all C(52,3)=22,100 hands → {score: percentile 0-100}.
+
+    Fixed bands per hand type — each group gets its own range:
+      High Card      :  0–55
+      Pair           : 55–70
+      Flush          : 70–80
+      Straight       : 80–90
+      Straight Flush : 90–95
+      Trail          : 95–100
+    Within each band, hands are ranked among their group.
+    """
+    from collections import Counter
+    deck = [{"rank": r, "suit": s} for s in SUITS for r in RANKS]
+
+    # Collect scores per hand type
+    groups: dict[int, Counter] = {r: Counter() for r in HandRank}
+    for combo in combinations(deck, 3):
+        rank, tb = evaluate_hand(list(combo))
+        groups[rank][_hand_score(rank, tb)] += 1
+
+    # Band definitions: (HandRank, low%, high%)
+    bands = [
+        (HandRank.HIGH_CARD,       0,  55),
+        (HandRank.PAIR,           55,  70),
+        (HandRank.FLUSH,          70,  80),
+        (HandRank.STRAIGHT,       80,  90),
+        (HandRank.STRAIGHT_FLUSH, 90,  95),
+        (HandRank.TRAIL,          95, 100),
+    ]
+
+    pct: dict[int, int] = {}
+    for hand_rank, lo, hi in bands:
+        counts = groups[hand_rank]
+        if not counts:
+            continue
+        total = sum(counts.values())
+        band_width = hi - lo
+        cum = 0
+        sorted_scores = sorted(counts)
+        for s in sorted_scores:
+            pct[s] = lo + int(cum / total * band_width)
+            cum += counts[s]
+        # Best hand in this band gets the top value
+        pct[sorted_scores[-1]] = hi
+
+    return pct
+
+_PCT = _build_percentile()                # built once at import
+_PCT_KEYS = sorted(_PCT)                  # for bisect fallback
+
+import bisect as _bisect
+
+
+def hand_strength_pct(cards: list[dict], game_type: str = "normal",
+                      joker_rank: str | None = None) -> int:
+    """Return 0-100 % showing what fraction of all possible hands yours beats.
+    For muflis the scale is simply inverted (100 − normal)."""
+    if not cards:
+        return 0
+    if game_type == "2card":
+        rank, tb = evaluate_hand_2card(cards)
+    elif game_type == "4card":
+        rank, tb = evaluate_hand_4card(cards)
+    elif game_type == "joker" and joker_rank:
+        rank, tb = evaluate_hand_joker(cards, joker_rank)
+    else:
+        rank, tb = evaluate_hand(cards)
+    score = _hand_score(rank, tb)
+    # Exact lookup, or nearest lower score via bisect
+    if score in _PCT:
+        pct = _PCT[score]
+    else:
+        idx = _bisect.bisect_right(_PCT_KEYS, score) - 1
+        pct = _PCT[_PCT_KEYS[max(0, idx)]] if idx >= 0 else 0
+    if game_type == "muflis":
+        pct = 100 - pct
+    return pct
+
+
 # ═══════════════════════════════════════════════════════════════════════════
 #  PLAYER STATE
 # ═══════════════════════════════════════════════════════════════════════════
@@ -269,14 +355,17 @@ class Player:
             if reveal_cards:
                 d["cards"] = self.cards
                 d["hand_name"] = hand_name(self.cards, game_type, joker_rank)
+                d["hand_strength"] = hand_strength_pct(self.cards, game_type, joker_rank)
             elif self.is_seen or self.is_viewing:
                 d["cards"] = self.cards
                 d["hand_name"] = hand_name(self.cards, game_type, joker_rank)
+                d["hand_strength"] = hand_strength_pct(self.cards, game_type, joker_rank)
             else:
                 d["cards"] = [{"rank": "?", "suit": "?"} for _ in self.cards]
         elif reveal_cards and self.cards:
             d["cards"] = self.cards
             d["hand_name"] = hand_name(self.cards, game_type, joker_rank)
+            d["hand_strength"] = hand_strength_pct(self.cards, game_type, joker_rank)
         else:
             d["card_count"] = len(self.cards)
         return d

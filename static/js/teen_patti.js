@@ -17,31 +17,19 @@ tp = (() => {
   // Player color palette for avatars
   const _COLORS = ['#6c5ce7','#00cec9','#e17055','#fdcb6e','#a29bfe','#55efc4','#fab1a0'];
 
-  // Hand strength mapping (name substring → 1-6 strength)
-  const _STRENGTH = {
-    'Trail': { s: 6, l: 'BEST', c: '#ff4757' },
-    'Straight Flush': { s: 5, l: 'AMAZING', c: '#ffd700' },
-    'Straight': { s: 4, l: 'GREAT', c: '#ffa502' },
-    'Flush': { s: 3, l: 'GOOD', c: '#2ed573' },
-    'Pair': { s: 2, l: 'OKAY', c: '#74b9ff' },
-    'High Card': { s: 1, l: 'WEAK', c: '#636e72' },
-  };
-  // Muflis: lowest hand wins → invert strength
-  const _STRENGTH_MUFLIS = {
-    'High Card': { s: 6, l: 'BEST', c: '#ff4757' },
-    'Pair': { s: 5, l: 'GREAT', c: '#ffa502' },
-    'Flush': { s: 4, l: 'GOOD', c: '#2ed573' },
-    'Straight': { s: 3, l: 'OKAY', c: '#74b9ff' },
-    'Straight Flush': { s: 2, l: 'WEAK', c: '#636e72' },
-    'Trail': { s: 1, l: 'WORST', c: '#636e72' },
-  };
-  function _getStrength(handName, gameType) {
-    if (!handName) return null;
-    const map = gameType === 'muflis' ? _STRENGTH_MUFLIS : _STRENGTH;
-    for (const [key, val] of Object.entries(map)) {
-      if (handName.includes(key)) return val;
-    }
-    return null;
+  // Hand strength — server sends hand_strength (0-100%) already computed.
+  // Just pick label + colour based on the value.
+  function _getStrength(player) {
+    const pct = player.hand_strength;
+    if (pct == null) return null;
+    let l, c;
+    if (pct >= 95)      { l = 'INCREDIBLE'; c = '#ff4757'; }
+    else if (pct >= 85)  { l = 'AMAZING'; c = '#ffd700'; }
+    else if (pct >= 70)  { l = 'GREAT'; c = '#ffa502'; }
+    else if (pct >= 50)  { l = 'GOOD'; c = '#2ed573'; }
+    else if (pct >= 30)  { l = 'OKAY'; c = '#74b9ff'; }
+    else                 { l = 'WEAK'; c = '#636e72'; }
+    return { pct, l, c };
   }
 
   // ── Sound effects loaded from /static/js/sounds.js ────
@@ -404,12 +392,13 @@ tp = (() => {
         </div>`;
       }).join('');
       // Hand name — always provided by server when cards are visible
-      if (myPlayer.hand_name) {
+      const cardsRevealed = myPlayer.cards.some(c => c.rank !== '?');
+      if (myPlayer.hand_name && cardsRevealed) {
         let hn = myPlayer.hand_name;
         if (s.game_type === 'muflis') hn += ' (lower is better!)';
         $myHand.textContent = hn;
-        // Strength bar
-        const str = _getStrength(myPlayer.hand_name, s.game_type);
+        // Strength bar — only after cards are revealed, stays entire round
+        const str = _getStrength(myPlayer);
         let $sb = document.getElementById('hand-strength-bar');
         if (str) {
           if (!$sb) {
@@ -418,11 +407,14 @@ tp = (() => {
             $sb.className = 'hand-strength';
             $myHand.after($sb);
           }
-          const pct = (str.s / 6) * 100;
-          $sb.innerHTML = `<div class="hs-track"><div class="hs-fill" style="width:${pct}%;background:${str.c}"></div></div><span class="hs-label" style="color:${str.c}">${str.l}</span>`;
+          $sb.innerHTML = `<div class="hs-track"><div class="hs-fill" style="width:${str.pct}%;background:${str.c}"></div></div><span class="hs-label" style="color:${str.c}">${str.pct}% ${str.l}</span>`;
         } else if ($sb) { $sb.remove(); }
+      } else if (!cardsRevealed) {
+        $myHand.textContent = '(View cards to peek)';
+        const $sb = document.getElementById('hand-strength-bar');
+        if ($sb) $sb.remove();
       } else {
-        $myHand.textContent = myPlayer.cards[0].rank !== '?' ? '' : '(View cards to peek)';
+        $myHand.textContent = '';
       }
     } else {
       $myCards.innerHTML = '';
