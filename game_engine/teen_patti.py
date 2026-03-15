@@ -7,6 +7,7 @@ everything and broadcasts state.
 
 import random
 import string
+import time
 import logging
 from itertools import combinations
 from enum import IntEnum
@@ -16,6 +17,7 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 COMMISSION_RATE = 0.05  # 5% house commission
+TURN_TIMEOUT = 90       # seconds per turn
 
 
 def _add_to_pot(room, cost: int):
@@ -311,6 +313,7 @@ class Room:
     mode_picker: str = "admin"                 # "admin" = admin always picks, "winner" = last winner picks
     last_winner_username: Optional[str] = None  # username of last round's winner
     house_commission: int = 0                    # accumulated commission this round
+    turn_start_time: float = 0.0                 # Unix ts when current turn started
 
     # ── helpers ─────────────────────────────────────────────
     def player(self, username: str) -> Optional[Player]:
@@ -337,6 +340,7 @@ class Room:
     def advance_turn(self):
         self.current_turn = self._next_active(self.current_turn)
         self.turn_number += 1
+        self.turn_start_time = time.time()
         # Track full rounds (one cycle through active players)
         active = self.active_count()
         if active > 0 and self.turn_number > 0 and self.turn_number % active == 0:
@@ -392,6 +396,8 @@ class Room:
             "mode_picker": self.mode_picker,
             "starter": starter,
             "min_coins": self.table_amount * MIN_COIN_MULTIPLIER if self.table_amount else 0,
+            "turn_deadline": self.turn_start_time + TURN_TIMEOUT if self.phase == RoomPhase.PLAYING and self.turn_start_time else 0,
+            "turn_timeout": TURN_TIMEOUT,
         }
 
 
@@ -611,6 +617,7 @@ def start_game(room: Room, table_amount: int, game_type: str = "normal") -> tupl
     room.current_turn = (room.last_winner_index + 1) % len(room.players)
     if room.players[room.current_turn].is_folded:
         room.current_turn = room._next_active(room.current_turn)
+    room.turn_start_time = time.time()
 
     if game_type == "joker" and room.joker_card:
         mode_msg = f"\U0001f0cf Joker mode \u2014 {room.joker_card['rank']}{room.joker_card['suit']} is wild!"
@@ -710,6 +717,19 @@ def action_fold(room: Room, username: str) -> tuple[bool, str]:
     room.advance_turn()
     _check_auto_win(room)
     return True, "Folded"
+
+
+def action_timeout_fold(room: Room) -> tuple[bool, str]:
+    """Auto-fold current player due to turn timeout."""
+    cp = room.current_player()
+    if not cp or cp.is_folded:
+        return False, "No active player"
+    username = cp.username
+    cp.is_viewing = False
+    cp.is_folded = True
+    room.advance_turn()
+    _check_auto_win(room)
+    return True, f"⏰ {username} ran out of time — Auto-Fold"
 
 
 def action_show(room: Room, username: str) -> tuple[bool, str]:
@@ -901,6 +921,7 @@ def restart_game(room: Room):
     room.last_auto_event = None
     room.joker_card = None
     room.house_commission = 0
+    room.turn_start_time = 0.0
     for p in room.players:
         p.cards = []
         p.is_seen = False

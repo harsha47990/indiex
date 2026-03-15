@@ -3,6 +3,15 @@
    ═══════════════════════════════════════════════════════════════════════ */
 const _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
+// ── Mute state (persisted in localStorage) ───────────────────
+let _soundMuted = localStorage.getItem('indiex_muted') === 'true';
+function isSoundMuted() { return _soundMuted; }
+function toggleMute() {
+  _soundMuted = !_soundMuted;
+  localStorage.setItem('indiex_muted', _soundMuted);
+  return _soundMuted;
+}
+
 function _playTone(freq, duration, type = 'sine', vol = 0.3) {
   const osc = _audioCtx.createOscillator();
   const gain = _audioCtx.createGain();
@@ -17,17 +26,20 @@ function _playTone(freq, duration, type = 'sine', vol = 0.3) {
 }
 
 function playChatSound() {
+  if (_soundMuted) return;
   _playTone(880, 0.1, 'sine', 0.25);
   setTimeout(() => _playTone(1175, 0.1, 'sine', 0.2), 80);
 }
 
 function playTurnSound() {
+  if (_soundMuted) return;
   _playTone(523, 0.15, 'triangle', 0.35);
   setTimeout(() => _playTone(659, 0.15, 'triangle', 0.35), 120);
   setTimeout(() => _playTone(784, 0.25, 'triangle', 0.3), 240);
 }
 
 function playModeSound() {
+  if (_soundMuted) return;
   _playTone(523, 0.15, 'sawtooth', 0.12);
   setTimeout(() => _playTone(659, 0.15, 'sawtooth', 0.12), 120);
   setTimeout(() => _playTone(784, 0.15, 'sawtooth', 0.12), 240);
@@ -35,6 +47,7 @@ function playModeSound() {
 }
 
 function playWinSound() {
+  if (_soundMuted) return;
   const ctx = _audioCtx;
   const t = ctx.currentTime;
 

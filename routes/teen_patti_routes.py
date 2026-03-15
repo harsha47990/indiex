@@ -7,6 +7,7 @@ REST endpoints for room management + WebSocket for real-time gameplay.
 import asyncio
 import json
 import logging
+import time
 from time import monotonic
 
 from fastapi import APIRouter, Cookie, WebSocket, WebSocketDisconnect, Depends
@@ -20,7 +21,8 @@ from dependencies import render_page, require_user
 from game_engine.teen_patti import (
     create_room, get_room, join_room, leave_room, exit_room, start_game,
     action_blind, action_view, action_seen, action_fold, action_show, action_sideshow,
-    restart_game, get_starter, RoomPhase, check_disconnected_turn, cleanup_empty_room,
+    action_timeout_fold, restart_game, get_starter, RoomPhase,
+    check_disconnected_turn, cleanup_empty_room, TURN_TIMEOUT,
 )
 
 logger = logging.getLogger(__name__)
@@ -36,6 +38,9 @@ WS_RATE_WINDOW: float = 1.0   # window in seconds
 
 # ── Active WebSocket connections:  room_code -> {username: WebSocket} ───
 _connections: dict[str, dict[str, WebSocket]] = {}
+
+# ── Turn timers: room_code -> asyncio Task that auto-folds on timeout ──
+_turn_timers: dict[str, asyncio.Task] = {}
 
 
 @router.get("", response_class=HTMLResponse)
@@ -117,8 +122,49 @@ async def _broadcast_event(room_code: str, event: dict):
         await asyncio.gather(*tasks)
 
 
-# ═════════════════════════════════════════════════════════════════════════
-#  SHARED HELPERS
+# ═════════════════════════════════════════════════════════════════════════#  TURN TIMER (auto-fold on timeout)
+# ═════════════════════════════════════════════════════════════════════
+
+def _cancel_turn_timer(room_code: str):
+    """Cancel any existing turn timer for a room."""
+    task = _turn_timers.pop(room_code, None)
+    if task and not task.done():
+        task.cancel()
+
+
+def _schedule_turn_timer(room_code: str, room):
+    """Schedule auto-fold after TURN_TIMEOUT if the current turn doesn't change."""
+    _cancel_turn_timer(room_code)
+    if room.phase != RoomPhase.PLAYING:
+        return
+    expected_turn = room.current_turn
+    expected_tn = room.turn_number
+    deadline = room.turn_start_time + TURN_TIMEOUT
+
+    async def _timer():
+        remaining = deadline - time.time()
+        if remaining > 0:
+            await asyncio.sleep(remaining)
+        r = get_room(room_code)
+        if not r or r.phase != RoomPhase.PLAYING:
+            return
+        if r.current_turn != expected_turn or r.turn_number != expected_tn:
+            return
+        ok, msg = action_timeout_fold(r)
+        if not ok:
+            return
+        if r.phase == RoomPhase.RESULT:
+            _persist_coins(r)
+        await _broadcast_event(room_code, {"type": "event", "message": msg})
+        await _broadcast(room_code, r)
+        await _handle_dc_chain(room_code, r)
+        if r.phase == RoomPhase.PLAYING:
+            _schedule_turn_timer(room_code, r)
+
+    _turn_timers[room_code] = asyncio.create_task(_timer())
+
+
+# ═════════════════════════════════════════════════════════════════════#  SHARED HELPERS
 # ═════════════════════════════════════════════════════════════════════════
 
 async def _handle_dc_chain(room_code: str, room) -> bool:
@@ -300,6 +346,12 @@ async def _post_action(ws, room_code, room, action, ok, reply):
                     pass
         room.last_sideshow = None
 
+    # Schedule/cancel turn timer
+    if room.phase == RoomPhase.PLAYING:
+        _schedule_turn_timer(room_code, room)
+    else:
+        _cancel_turn_timer(room_code)
+
 
 @router.websocket("/ws/{room_code}")
 async def ws_game(ws: WebSocket, room_code: str):
@@ -352,6 +404,10 @@ async def ws_game(ws: WebSocket, room_code: str):
     # trigger the auto-fold chain
     await _handle_dc_chain(room_code, room)
 
+    # Ensure turn timer is running if game is in progress
+    if room.phase == RoomPhase.PLAYING:
+        _schedule_turn_timer(room_code, room)
+
     try:
         _msg_times: list[float] = []
         while True:
@@ -376,6 +432,16 @@ async def ws_game(ws: WebSocket, room_code: str):
             # ── Custom-flow actions (handle own ack/broadcast) ──
             if action == "chat":
                 await _on_chat(room_code, username, msg)
+                continue
+
+            if action == "reaction":
+                emoji = (msg.get("emoji") or "")[:4]
+                if emoji:
+                    await _broadcast_event(room_code, {
+                        "type": "reaction",
+                        "from": username,
+                        "emoji": emoji,
+                    })
                 continue
 
             if action == "request_coins":
@@ -418,6 +484,7 @@ async def ws_game(ws: WebSocket, room_code: str):
 
             # Check if all players disconnected — delete room
             if cleanup_empty_room(room_code):
+                _cancel_turn_timer(room_code)
                 return
 
             # Notify others about disconnect

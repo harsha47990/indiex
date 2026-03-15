@@ -2,6 +2,10 @@
 # ═══════════════════════════════════════════════════════════════════════
 # deploy_indiex.sh — Deploy Indiex on Ubuntu EC2
 # Run this CMD to deploy:  chmod +x deploy_indiex.sh && ./deploy_indiex.sh
+
+## enter domain name for HTTPS: indiex.duckdns.org 
+
+# it auto renew ssl certs with certbot, so no need to worry about that.
 # EC2 Security Group: add inbound rules for Port 80 (HTTP) AND Port 443 (HTTPS) from 0.0.0.0/0
 # DNS: Point your domain (A record) to the EC2 public IP BEFORE running this script
 # post installation commands (run as needed):

@@ -9,7 +9,40 @@ tp = (() => {
   let state = null;
   let prevTurn = null;
   let _resultShown = false;
+  let _turnTimer = null;
+  let _turnDeadline = 0;
+  let _turnTimeout = 30000;
   const me = indiex.username;
+
+  // Player color palette for avatars
+  const _COLORS = ['#6c5ce7','#00cec9','#e17055','#fdcb6e','#a29bfe','#55efc4','#fab1a0'];
+
+  // Hand strength mapping (name substring → 1-6 strength)
+  const _STRENGTH = {
+    'Trail': { s: 6, l: 'BEST', c: '#ff4757' },
+    'Straight Flush': { s: 5, l: 'AMAZING', c: '#ffd700' },
+    'Straight': { s: 4, l: 'GREAT', c: '#ffa502' },
+    'Flush': { s: 3, l: 'GOOD', c: '#2ed573' },
+    'Pair': { s: 2, l: 'OKAY', c: '#74b9ff' },
+    'High Card': { s: 1, l: 'WEAK', c: '#636e72' },
+  };
+  // Muflis: lowest hand wins → invert strength
+  const _STRENGTH_MUFLIS = {
+    'High Card': { s: 6, l: 'BEST', c: '#ff4757' },
+    'Pair': { s: 5, l: 'GREAT', c: '#ffa502' },
+    'Flush': { s: 4, l: 'GOOD', c: '#2ed573' },
+    'Straight': { s: 3, l: 'OKAY', c: '#74b9ff' },
+    'Straight Flush': { s: 2, l: 'WEAK', c: '#636e72' },
+    'Trail': { s: 1, l: 'WORST', c: '#636e72' },
+  };
+  function _getStrength(handName, gameType) {
+    if (!handName) return null;
+    const map = gameType === 'muflis' ? _STRENGTH_MUFLIS : _STRENGTH;
+    for (const [key, val] of Object.entries(map)) {
+      if (handName.includes(key)) return val;
+    }
+    return null;
+  }
 
   // ── Sound effects loaded from /static/js/sounds.js ────
 
@@ -126,6 +159,8 @@ tp = (() => {
         }
       } else if (msg.type === 'sideshow_reveal') {
         showSideshowReveal(msg.data);
+      } else if (msg.type === 'reaction') {
+        _showFloatingReaction(msg.from, msg.emoji);
       } else if (msg.type === 'exit') {
         // Server confirmed we left — go back to games page
         addLog(msg.message);
@@ -195,6 +230,8 @@ tp = (() => {
       $actions.style.display   = 'none';
       $infoBar.style.display   = 'none';
       $overlay.classList.remove('show');
+      _turnDeadline = 0;
+      if (_turnTimer) { clearInterval(_turnTimer); _turnTimer = null; }
 
       // Show lobby players
       $lobbyPlayers.style.display = 'flex';
@@ -248,6 +285,16 @@ tp = (() => {
     } else {
       $tableStatus.textContent = `🏆 ${s.winner} wins!`;
       prevTurn = null;
+    }
+
+    // ── Turn timer ──
+    if (s.phase === 'playing' && s.turn_deadline) {
+      _turnDeadline = s.turn_deadline * 1000;
+      _turnTimeout = (s.turn_timeout || 30) * 1000;
+      if (!_turnTimer) _turnTimer = setInterval(_updateTurnTimer, 100);
+    } else {
+      _turnDeadline = 0;
+      if (_turnTimer) { clearInterval(_turnTimer); _turnTimer = null; }
     }
 
     // ── Mode indicator + joker card ──
@@ -314,11 +361,13 @@ tp = (() => {
           ${p.username === s.admin ? '<span class="seat-admin-badge">ADMIN</span>' : ''}
           ${isOffline ? '<span class="seat-offline-badge">⛔ OFFLINE</span>' : ''}
           ${isSittingOut ? '<span class="seat-sitting-badge">💸 LOW COINS</span>' : ''}
+          <div class="seat-avatar" style="background:${_COLORS[s.players.indexOf(p) % _COLORS.length]}">${p.username.charAt(0).toUpperCase()}</div>
           <div class="seat-name">${p.username}${isMe ? ' (You)' : ''}</div>
           <div class="seat-coins">🪙 ${p.coins.toLocaleString()}</div>
           <div class="seat-status ${isSittingOut ? 'sitting' : statusClass}">${isSittingOut ? 'SITTING OUT' : statusText}</div>
           <div class="seat-bet">bet: ${p.total_bet}</div>
           <div class="seat-cards">${cardsHTML}</div>
+          ${isTurn && !isSittingOut ? '<div class="seat-timer"><div class="seat-timer-bar"></div></div><div class="seat-countdown" id="turn-countdown"></div>' : ''}
         </div>
       `;
     }).join('');
@@ -359,6 +408,19 @@ tp = (() => {
         let hn = myPlayer.hand_name;
         if (s.game_type === 'muflis') hn += ' (lower is better!)';
         $myHand.textContent = hn;
+        // Strength bar
+        const str = _getStrength(myPlayer.hand_name, s.game_type);
+        let $sb = document.getElementById('hand-strength-bar');
+        if (str) {
+          if (!$sb) {
+            $sb = document.createElement('div');
+            $sb.id = 'hand-strength-bar';
+            $sb.className = 'hand-strength';
+            $myHand.after($sb);
+          }
+          const pct = (str.s / 6) * 100;
+          $sb.innerHTML = `<div class="hs-track"><div class="hs-fill" style="width:${pct}%;background:${str.c}"></div></div><span class="hs-label" style="color:${str.c}">${str.l}</span>`;
+        } else if ($sb) { $sb.remove(); }
       } else {
         $myHand.textContent = myPlayer.cards[0].rank !== '?' ? '' : '(View cards to peek)';
       }
@@ -471,6 +533,8 @@ tp = (() => {
 
         // Victory fanfare
         playWinSound();
+        if (navigator.vibrate) navigator.vibrate([100,50,100,50,200]);
+        _fireConfetti();
 
         // Refresh top bar coins
         indiex.fetchCoins();
@@ -499,6 +563,20 @@ tp = (() => {
       }
       _resultShown = false;
     }
+  }
+
+  // ── Turn timer countdown ───────────────────────────────
+  function _updateTurnTimer() {
+    if (!_turnDeadline) return;
+    const remaining = Math.max(0, _turnDeadline - Date.now());
+    const pct = Math.max(0, (remaining / _turnTimeout) * 100);
+    const secs = Math.ceil(remaining / 1000);
+    document.querySelectorAll('.seat-timer-bar').forEach(bar => {
+      bar.style.width = pct + '%';
+      bar.style.background = pct < 20 ? '#ff4757' : pct < 50 ? '#ffa502' : '#2ed573';
+    });
+    const $cd = document.getElementById('turn-countdown');
+    if ($cd) $cd.textContent = secs > 0 ? secs + 's' : '';
   }
 
   // ── Side-show reveal overlay ────────────────────────────
@@ -606,6 +684,31 @@ tp = (() => {
     return d.innerHTML;
   }
 
+  // ── Emoji reactions ──────────────────────────────────
+  function sendReaction(emoji) {
+    send('reaction', { emoji });
+    _closeReactionPicker();
+  }
+  function _showFloatingReaction(from, emoji) {
+    const $table = document.getElementById('game-table');
+    if (!$table) return;
+    const el = document.createElement('div');
+    el.className = 'float-reaction';
+    el.innerHTML = `<span class="fr-emoji">${emoji}</span><span class="fr-name">${escapeHtml(from)}</span>`;
+    el.style.left = (20 + Math.random() * 60) + '%';
+    $table.appendChild(el);
+    requestAnimationFrame(() => el.classList.add('rise'));
+    setTimeout(() => el.remove(), 2000);
+  }
+  function _toggleReactionPicker() {
+    const $rp = document.getElementById('reaction-picker');
+    if ($rp) $rp.classList.toggle('show');
+  }
+  function _closeReactionPicker() {
+    const $rp = document.getElementById('reaction-picker');
+    if ($rp) $rp.classList.remove('show');
+  }
+
   // ── Actions ────────────────────────────────────────────
   let _exiting = false;
 
@@ -616,12 +719,12 @@ tp = (() => {
     const modePicker = mp ? mp.value : 'admin';
     send('start', { table_amount: amt, game_type: gameType, mode_picker: modePicker });
   }
-  function doBlind()    { send('blind'); }
-  function doView()     { send('view'); }
-  function doSeen()     { send('seen'); }
-  function doFold()     { _closeFoldConfirm(); send('fold'); }
-  function doShow()     { send('show'); }
-  function doSideshow() { send('sideshow'); }
+  function doBlind()    { if (navigator.vibrate) navigator.vibrate(50); send('blind'); }
+  function doView()     { if (navigator.vibrate) navigator.vibrate(50); send('view'); }
+  function doSeen()     { if (navigator.vibrate) navigator.vibrate(50); send('seen'); }
+  function doFold()     { _closeFoldConfirm(); if (navigator.vibrate) navigator.vibrate([100,30,100]); send('fold'); }
+  function doShow()     { if (navigator.vibrate) navigator.vibrate([50,30,50,30,100]); send('show'); }
+  function doSideshow() { if (navigator.vibrate) navigator.vibrate([50,30,50]); send('sideshow'); }
 
   function confirmFold() {
     const $fc = document.getElementById('fold-confirm-overlay');
@@ -666,6 +769,62 @@ tp = (() => {
     send('exit');
   }
 
-  return { createRoom, joinRoom, startGame, doBlind, doView, doSeen, doFold, doShow, doSideshow, restart, sendChat, exitRoom, requestCoins, confirmFold, cancelFold, openNewRound, startNextRound };
+  function _updateMuteBtn() {
+    const $m = document.getElementById('mute-btn');
+    if ($m) $m.textContent = isSoundMuted() ? '🔇' : '🔊';
+  }
+  function muteToggle() {
+    toggleMute();
+    _updateMuteBtn();
+    indiex.toast(isSoundMuted() ? 'Sound muted' : 'Sound on');
+  }
+  // Set initial icon
+  setTimeout(_updateMuteBtn, 0);
+
+  // ── Confetti celebration ─────────────────────────────
+  function _fireConfetti() {
+    const canvas = document.createElement('canvas');
+    canvas.className = 'confetti-canvas';
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext('2d');
+    const colors = ['#ff4757','#ffd700','#2ed573','#6c5ce7','#00cec9','#ffa502','#ff6b81'];
+    const particles = [];
+    for (let i = 0; i < 120; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: -10 - Math.random() * canvas.height * 0.3,
+        w: 4 + Math.random() * 6,
+        h: 8 + Math.random() * 10,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        vx: (Math.random() - 0.5) * 4,
+        vy: 2 + Math.random() * 4,
+        rot: Math.random() * 360,
+        rv: (Math.random() - 0.5) * 12,
+      });
+    }
+    let frame = 0;
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      let alive = false;
+      particles.forEach(p => {
+        p.x += p.vx; p.y += p.vy; p.vy += 0.08; p.rot += p.rv;
+        if (p.y < canvas.height + 20) alive = true;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot * Math.PI / 180);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.restore();
+      });
+      frame++;
+      if (alive && frame < 180) requestAnimationFrame(draw);
+      else canvas.remove();
+    }
+    draw();
+  }
+
+  return { createRoom, joinRoom, startGame, doBlind, doView, doSeen, doFold, doShow, doSideshow, restart, sendChat, exitRoom, requestCoins, confirmFold, cancelFold, openNewRound, startNextRound, toggleMute: muteToggle, sendReaction, toggleReactions: _toggleReactionPicker };
 })();
 }); // end DOMContentLoaded

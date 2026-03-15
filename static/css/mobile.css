@@ -184,6 +184,19 @@
   }
   .mini-card.face-down::after { font-size: 14px !important; }
 
+  /* Seat avatar on mobile */
+  .seat .seat-avatar { width: 26px !important; height: 26px !important; font-size: 12px !important; }
+
+  /* Turn timer on mobile */
+  .seat-countdown { font-size: 9px !important; }
+
+  /* Reaction bar on mobile */
+  .reaction-bar { margin-bottom: 8px; }
+  .reaction-picker button { width: 34px; height: 34px; font-size: 20px; }
+
+  /* Mute button on mobile */
+  .mute-btn { width: 30px !important; height: 30px !important; font-size: 14px !important; }
+
   /* My big cards */
   .big-card {
     width: 64px !important;

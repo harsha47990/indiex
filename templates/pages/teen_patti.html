@@ -1,5 +1,5 @@
 <!-- pages/teen_patti.html — Multiplayer Teen Patti (page fragment) -->
-<link rel="stylesheet" href="/static/css/teen_patti.css?v=10">
+<link rel="stylesheet" href="/static/css/teen_patti.css?v=11">
 
 <div class="tp">
   <a class="tp-back" id="tp-back-link" href="/games">← Back to Games</a>
@@ -218,6 +218,7 @@
       <span class="room-stat">Turn: <strong id="round-count">0</strong></span>
       <strong id="active-count" style="display:none">0</strong>
       <button class="exit-room-btn" onclick="tp.exitRoom()" title="Leave Room">🚪 Exit</button>
+      <button class="mute-btn" id="mute-btn" onclick="tp.toggleMute()" title="Toggle sound"></button>
     </div>
 
     <!-- Info bar -->
@@ -299,6 +300,21 @@
     <!-- Action buttons -->
     <div class="actions" id="action-buttons" style="display:none;"></div>
 
+    <!-- Emoji reaction picker -->
+    <div class="reaction-bar">
+      <button class="reaction-toggle" onclick="tp.toggleReactions()">😀</button>
+      <div class="reaction-picker" id="reaction-picker">
+        <button onclick="tp.sendReaction('🔥')">🔥</button>
+        <button onclick="tp.sendReaction('😂')">😂</button>
+        <button onclick="tp.sendReaction('😭')">😭</button>
+        <button onclick="tp.sendReaction('👏')">👏</button>
+        <button onclick="tp.sendReaction('😱')">😱</button>
+        <button onclick="tp.sendReaction('🤯')">🤯</button>
+        <button onclick="tp.sendReaction('😎')">😎</button>
+        <button onclick="tp.sendReaction('💩')">💩</button>
+      </div>
+    </div>
+
     <!-- Result-phase next-round banner (shown when result overlay is closed) -->
     <div class="result-banner" id="result-banner" style="display:none;"></div>
 
@@ -364,5 +380,5 @@ function showRulesTab(btn, tabId) {
   document.getElementById(tabId).classList.add('active');
 }
 </script>
-<script src="/static/js/sounds.js?v=8"></script>
-<script src="/static/js/teen_patti.js?v=10"></script>
+<script src="/static/js/sounds.js?v=9"></script>
+<script src="/static/js/teen_patti.js?v=11"></script>
