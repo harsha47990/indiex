@@ -13,8 +13,8 @@ from fastapi import APIRouter, Cookie, WebSocket, WebSocketDisconnect, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 
 from auth import (
-    get_user_from_session, touch_activity, get_coins, load_coins,
-    batch_get_coins, batch_sync_coins,
+    get_user_from_session, verify_session, touch_activity, get_coins,
+    load_coins, batch_get_coins, batch_sync_coins,
 )
 from dependencies import render_page, require_user
 from game_engine.teen_patti import (
@@ -281,11 +281,12 @@ async def _on_exit(ws, room_code, room, username):
     await ws.send_json({"type": "ack", "ok": exit_ok, "message": exit_msg})
     await ws.send_json({"type": "exit", "message": exit_msg})
 
-    # Remove their connection
+    # Remove their connection (only if this is still the registered socket)
     conns = _connections.get(room_code, {})
-    conns.pop(username, None)
-    if not conns:
-        _connections.pop(room_code, None)
+    if conns.get(username) is ws:
+        conns.pop(username, None)
+        if not conns:
+            _connections.pop(room_code, None)
 
     # If room was deleted (all left), nothing to broadcast
     room_after = get_room(room_code)
@@ -395,6 +396,17 @@ async def ws_game(ws: WebSocket, room_code: str):
             return
         p = room.player(username)
 
+    # Evict old WebSocket for this user (duplicate login / stale tab)
+    if room_code in _connections:
+        old_ws = _connections[room_code].get(username)
+        if old_ws and old_ws is not ws:
+            try:
+                await old_ws.send_json({"type": "kicked", "message": "Logged in from another device"})
+                await old_ws.close()
+            except Exception:
+                pass  # already dead
+            logger.info("Evicted old WS for %s in room %s", username, room_code)
+
     # Register connection
     if room_code not in _connections:
         _connections[room_code] = {}
@@ -437,6 +449,11 @@ async def ws_game(ws: WebSocket, room_code: str):
 
             # ── Heartbeat ───────────────────────────────────────
             if action == "ping":
+                # Re-validate session — kicks stale tab after new login
+                if not verify_session(session_key):
+                    await ws.send_json({"type": "kicked", "message": "Logged in from another device"})
+                    await ws.close()
+                    return
                 await ws.send_json({"type": "pong"})
                 continue
 
@@ -480,32 +497,35 @@ async def ws_game(ws: WebSocket, room_code: str):
     except Exception as e:
         logger.exception("WebSocket error for %s in %s: %s", username, room_code, e)
     finally:
-        # Cleanup connection
+        # Only clean up if THIS socket is still the registered one.
+        # If a newer WS replaced us (eviction), skip cleanup — the new
+        # handler owns the connection entry and the player state.
         conns = _connections.get(room_code, {})
-        conns.pop(username, None)
-        if not conns:
-            _connections.pop(room_code, None)
+        if conns.get(username) is ws:
+            conns.pop(username, None)
+            if not conns:
+                _connections.pop(room_code, None)
 
-        room = get_room(room_code)
-        if room:
-            p = room.player(username)
-            if p:
-                p.is_connected = False
-                _persist_player_coins(p)
+            room = get_room(room_code)
+            if room:
+                p = room.player(username)
+                if p:
+                    p.is_connected = False
+                    _persist_player_coins(p)
 
-            # Check if all players disconnected — delete room
-            if cleanup_empty_room(room_code):
-                _cancel_turn_timer(room_code)
-                return
+                # Check if all players disconnected — delete room
+                if cleanup_empty_room(room_code):
+                    _cancel_turn_timer(room_code)
+                    return
 
-            # Notify others about disconnect
-            await _broadcast_event(room_code, {
-                "type": "event",
-                "message": f"{username} disconnected",
-            })
-            await _broadcast(room_code, room)
+                # Notify others about disconnect
+                await _broadcast_event(room_code, {
+                    "type": "event",
+                    "message": f"{username} disconnected",
+                })
+                await _broadcast(room_code, room)
 
-            # Auto-fold if it was this player's turn (or chain of disconnected)
-            if await _handle_dc_chain(room_code, room):
-                # After auto-fold chain, check again if room is now empty
-                cleanup_empty_room(room_code)
+                # Auto-fold if it was this player's turn (or chain of disconnected)
+                if await _handle_dc_chain(room_code, room):
+                    # After auto-fold chain, check again if room is now empty
+                    cleanup_empty_room(room_code)

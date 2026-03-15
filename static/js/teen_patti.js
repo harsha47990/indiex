@@ -161,6 +161,14 @@ tp = (() => {
         indiex.toast('You left the room');
         setTimeout(() => { window.location.href = '/games/teen-patti'; }, 600);
         return;
+      } else if (msg.type === 'kicked') {
+        // Another device logged in — stop reconnect and redirect
+        _exiting = true;
+        roomCode = null;
+        if (ws) { try { ws.close(); } catch(e) {} }
+        indiex.toast(msg.message, 'error');
+        setTimeout(() => { window.location.href = '/'; }, 1500);
+        return;
       } else if (msg.type === 'error') {
         indiex.toast(msg.message, 'error');
         // Terminal errors — stop auto-reconnect and go back to lobby
