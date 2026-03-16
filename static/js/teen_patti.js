@@ -362,7 +362,7 @@ tp = (() => {
         <div class="seat ${isTurn ? 'active-turn' : ''} ${p.is_folded ? 'folded' : ''} ${isMe ? 'is-me' : ''} ${isOffline ? 'offline' : ''} ${isSittingOut ? 'sitting-out' : ''}">
           ${p.username === s.admin ? '<span class="seat-admin-badge">ADMIN</span>' : ''}
           ${isOffline ? '<span class="seat-offline-badge">⛔ OFFLINE</span>' : ''}
-          ${isSittingOut ? '<span class="seat-sitting-badge">💸 LOW COINS</span>' : ''}
+          ${isSittingOut && !isOffline ? '<span class="seat-sitting-badge">💸 LOW COINS</span>' : ''}
           <div class="seat-avatar" style="background:${_COLORS[pIdx % _COLORS.length]}">${p.username.charAt(0).toUpperCase()}</div>
           <div class="seat-name">${p.username}${isMe ? ' (You)' : ''}</div>
           <div class="seat-coins">🪙 ${p.coins.toLocaleString()}</div>

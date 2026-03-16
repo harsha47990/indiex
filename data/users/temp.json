@@ -5,7 +5,7 @@
   "display_name": "temp",
   "role": "user",
   "must_reset_password": false,
-  "coins": 600,
+  "coins": 560,
   "session_key": null,
   "last_activity": null,
   "created_at": "2026-03-12T16:41:01.272433+00:00",

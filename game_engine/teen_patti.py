@@ -640,12 +640,18 @@ def start_game(room: Room, table_amount: int, game_type: str = "normal") -> tupl
     room.table_amount = table_amount
     min_coins = table_amount * MIN_COIN_MULTIPLIER
 
-    # Pre-round coin check — mark broke players as sitting out
+    # Pre-round check — mark broke AND disconnected players as sitting out
     sitting_out_names = []
+    dc_sitting_out_names = []
     for p in room.players:
-        p.is_sitting_out = p.coins < min_coins
-        if p.is_sitting_out:
+        if not p.is_connected:
+            p.is_sitting_out = True
+            dc_sitting_out_names.append(p.username)
+        elif p.coins < min_coins:
+            p.is_sitting_out = True
             sitting_out_names.append(p.username)
+        else:
+            p.is_sitting_out = False
 
     # Count eligible players
     eligible = [p for p in room.players if not p.is_sitting_out]
@@ -653,7 +659,7 @@ def start_game(room: Room, table_amount: int, game_type: str = "normal") -> tupl
         # Reset sitting_out flags — can't start
         for p in room.players:
             p.is_sitting_out = False
-        return False, f"Not enough players with {min_coins}+ coins (need at least 2)"
+        return False, f"Not enough connected players with {min_coins}+ coins (need at least 2)"
 
     room.phase = RoomPhase.PLAYING
     room.pot = 0
@@ -707,12 +713,18 @@ def start_game(room: Room, table_amount: int, game_type: str = "normal") -> tupl
         mode_msg = "Normal mode"
     sitting_msg = ""
     if sitting_out_names:
-        sitting_msg = "\n" + "\n".join(
+        sitting_msg += "\n" + "\n".join(
             f"💸 {name} is sitting out — not enough coins (need {min_coins} 🪙)"
             for name in sitting_out_names
         )
-    logger.info("Game started in room %s — table %d — %s (sitting out: %s)",
-                room.code, table_amount, game_type, sitting_out_names or "none")
+    if dc_sitting_out_names:
+        sitting_msg += "\n" + "\n".join(
+            f"📡 {name} is sitting out — disconnected"
+            for name in dc_sitting_out_names
+        )
+    logger.info("Game started in room %s — table %d — %s (sitting out: %s, disconnected: %s)",
+                room.code, table_amount, game_type,
+                sitting_out_names or "none", dc_sitting_out_names or "none")
     return True, f"Game started — {mode_msg}{sitting_msg}"
 
 
