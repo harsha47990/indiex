@@ -74,11 +74,12 @@ async def api_join_room(payload: dict, user: dict = Depends(require_user)):
     if not ok:
         return JSONResponse({"ok": False, "error": msg}, 400)
     room = get_room(code)
-    # Sync coins
-    p = room.player(user["username"])
+    # Sync coins — player may be in players or waiting_players
+    p = room.any_player(user["username"]) if room else None
     if p:
         p.coins = user.get("coins", 0)
-    return {"ok": True, "room_code": code, "message": msg}
+    waiting = msg == "Waiting"
+    return {"ok": True, "room_code": code, "message": msg, "waiting": waiting}
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -241,12 +242,27 @@ def _on_start(room, username, msg):
     return start_game(room, table_amount, game_type)
 
 
-def _on_restart(room, username):
-    """Handle 'restart' action."""
+async def _on_restart(room_code, room, username):
+    """Handle 'restart' action — promote waiting players and go to lobby."""
     starter = get_starter(room)
     if username != starter:
         return False, f"Only {starter} can restart"
+    # Capture waiting player names before they get promoted
+    promoted = [wp.username for wp in room.waiting_players]
     restart_game(room)
+    # Sync coins for promoted players from DB
+    if promoted:
+        coin_map = batch_get_coins(promoted)
+        for uname in promoted:
+            p = room.player(uname)
+            if p:
+                p.coins = coin_map.get(uname, p.coins)
+        # Notify about promoted players
+        for uname in promoted:
+            await _broadcast_event(room_code, {
+                "type": "event",
+                "message": f"✅ {uname} joined the room",
+            })
     return True, "Game restarted — set table amount and start"
 
 
@@ -279,7 +295,7 @@ async def _on_request_coins(ws, room_code, room, username):
 async def _on_exit(ws, room_code, room, username):
     """Handle 'exit' — player leaves, cleanup, close socket."""
     # Persist coins before removal so bet losses aren't lost
-    p = room.player(username)
+    p = room.any_player(username)
     if p:
         _persist_player_coins(p)
     exit_ok, exit_msg = exit_room(room_code, username)
@@ -393,13 +409,13 @@ async def ws_game(ws: WebSocket, room_code: str):
 
     p = room.player(username)
     if not p:
-        # Player not in room — try to rejoin (handles reconnection mid-game)
+        # Player not in room — try to join (handles reconnection + waiting queue)
         ok, msg = join_room(room_code, username)
         if not ok:
             await ws.send_json({"type": "error", "message": msg})
             await ws.close()
             return
-        p = room.player(username)
+        p = room.any_player(username)  # may be in players or waiting_players
 
     # Evict old WebSocket for this user (duplicate login / stale tab)
     if room_code in _connections:
@@ -422,11 +438,18 @@ async def ws_game(ws: WebSocket, room_code: str):
     p.coins = get_coins(username)
 
     # Send initial state
+    is_waiting = room.waiting_player(username) is not None
     await _broadcast(room_code, room)
-    await _broadcast_event(room_code, {
-        "type": "event",
-        "message": f"{username} connected",
-    })
+    if is_waiting:
+        await _broadcast_event(room_code, {
+            "type": "event",
+            "message": f"⏳ {username} is waiting to join next round",
+        })
+    else:
+        await _broadcast_event(room_code, {
+            "type": "event",
+            "message": f"{username} connected",
+        })
 
     # If this player reconnected and it's someone else's (disconnected) turn,
     # trigger the auto-fold chain
@@ -489,7 +512,7 @@ async def ws_game(ws: WebSocket, room_code: str):
             if action == "start":
                 ok, reply = _on_start(room, username, msg)
             elif action == "restart":
-                ok, reply = _on_restart(room, username)
+                ok, reply = await _on_restart(room_code, room, username)
             elif action in _SIMPLE_ACTIONS:
                 ok, reply = _SIMPLE_ACTIONS[action](room, username)
             else:
@@ -513,7 +536,7 @@ async def ws_game(ws: WebSocket, room_code: str):
 
             room = get_room(room_code)
             if room:
-                p = room.player(username)
+                p = room.any_player(username)
                 if p:
                     p.is_connected = False
                     _persist_player_coins(p)

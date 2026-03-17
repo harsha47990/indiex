@@ -1,5 +1,5 @@
 <!-- pages/teen_patti.html — Multiplayer Teen Patti (page fragment) -->
-<link rel="stylesheet" href="/static/css/teen_patti.css?v=13">
+<link rel="stylesheet" href="/static/css/teen_patti.css?v=14">
 
 <div class="tp">
   <a class="tp-back" id="tp-back-link" href="/games">← Back to Games</a>
@@ -325,6 +325,17 @@
     <!-- Players (lobby) -->
     <div id="lobby-players" class="lobby-players"></div>
 
+    <!-- Waiting overlay (shown to players queued during mid-game) -->
+    <div id="waiting-overlay" class="waiting-overlay" style="display:none;">
+      <div class="waiting-box">
+        <div class="waiting-icon">⏳</div>
+        <div class="waiting-title">Game in Progress</div>
+        <div class="waiting-msg">You'll automatically join when this round ends. Hang tight!</div>
+        <div class="waiting-players-info" id="waiting-players-info"></div>
+        <button class="exit-room-btn" onclick="tp.exitRoom()" style="margin-top:16px;">🚪 Leave</button>
+      </div>
+    </div>
+
     <!-- TABLE -->
     <div class="tp-table" id="game-table" style="display:none;">
       <div class="mode-badge" id="mode-badge" style="display:none;"></div>
@@ -424,4 +435,4 @@ function showRulesTab(btn, tabId) {
 }
 </script>
 <script src="/static/js/sounds.js?v=9"></script>
-<script src="/static/js/teen_patti.js?v=17"></script>
+<script src="/static/js/teen_patti.js?v=18"></script>

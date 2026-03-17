@@ -5,7 +5,7 @@
   "display_name": "House",
   "role": "system",
   "must_reset_password": true,
-  "coins": 344,
+  "coins": 367,
   "session_key": null,
   "last_activity": null,
   "created_at": "2026-03-14T19:21:58.193317+00:00",

@@ -62,6 +62,8 @@ tp = (() => {
   const $resWinner = document.getElementById('result-winner');
   const $resDetail = document.getElementById('result-detail');
   const $resPayout = document.getElementById('result-payout');
+  const $waitingOverlay = document.getElementById('waiting-overlay');
+  const $waitingInfo    = document.getElementById('waiting-players-info');
 
   // ── API helpers ────────────────────────────────────────
   async function post(url, body = {}) {
@@ -98,6 +100,9 @@ tp = (() => {
     const res = await post('/games/teen-patti/api/join-room', { room_code: code });
     if (res.ok) {
       roomCode = res.room_code;
+      if (res.waiting) {
+        indiex.toast('Game in progress — you\'ll join when this round ends!', 'info');
+      }
       connectWS();
     } else {
       indiex.toast(res.error || 'Failed', 'error');
@@ -217,6 +222,28 @@ tp = (() => {
     const isAdmin = s.admin === me;
     const isStarter = (s.starter || s.admin) === me;
     const myPlayer = s.players.find(p => p.username === me);
+    const amWaiting = !myPlayer && s.waiting_players && s.waiting_players.some(w => w.username === me);
+
+    // ── WAITING OVERLAY (mid-game join queue) ──
+    if (amWaiting) {
+      $waitingOverlay.style.display = 'flex';
+      // Hide game elements
+      $gameTable.style.display  = 'none';
+      $myArea.style.display     = 'none';
+      $actions.style.display    = 'none';
+      $infoBar.style.display    = 'none';
+      $lobbyPlayers.style.display = 'none';
+      $adminLobby.style.display = 'none';
+      $overlay.classList.remove('show');
+      // Show info about current game
+      const total = s.players.length;
+      const waitCount = s.waiting_players ? s.waiting_players.length : 0;
+      let info = `${total} player${total !== 1 ? 's' : ''} in game`;
+      if (waitCount > 1) info += ` · ${waitCount} waiting`;
+      $waitingInfo.textContent = info;
+      return;
+    }
+    $waitingOverlay.style.display = 'none';
 
     // Counts
     $playerCnt.textContent = s.players.length;

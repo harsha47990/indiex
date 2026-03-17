@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 COMMISSION_RATE = 0.05  # 5% house commission
 TURN_TIMEOUT = 90       # seconds per turn
+MAX_ROOM_PLAYERS = 8    # max players + waiting per room
 AK47_JOKER_RANKS = ["A", "K", "4", "7"]  # fixed wild ranks for AK47 mode
 
 
@@ -436,6 +437,7 @@ class Room:
     turn_start_time: float = 0.0                 # Unix ts when current turn started
     round_start_active: int = 0                  # active count when current round started
     round_turns_taken: int = 0                   # turns taken in current round
+    waiting_players: list[Player] = field(default_factory=list)  # queued during mid-game
 
     # ── helpers ─────────────────────────────────────────────
     def player(self, username: str) -> Optional[Player]:
@@ -443,6 +445,16 @@ class Room:
             if p.username == username:
                 return p
         return None
+
+    def waiting_player(self, username: str) -> Optional[Player]:
+        for p in self.waiting_players:
+            if p.username == username:
+                return p
+        return None
+
+    def any_player(self, username: str) -> Optional[Player]:
+        """Lookup in both active players and waiting queue."""
+        return self.player(username) or self.waiting_player(username)
 
     def active_players(self) -> list[Player]:
         return [p for p in self.players if not p.is_folded]
@@ -543,6 +555,10 @@ class Room:
             "turn_timeout": TURN_TIMEOUT,
             "zandu_jokers": self._zandu_public() if self.game_type == "zandu" else None,
             "zandu_revealed": self.zandu_revealed if self.game_type == "zandu" else 0,
+            "waiting_players": [
+                {"username": wp.username, "coins": wp.coins}
+                for wp in self.waiting_players
+            ],
         }
 
     def _zandu_public(self) -> list[dict | None]:
@@ -588,7 +604,9 @@ def remove_room(code: str):
 
 
 def join_room(code: str, username: str) -> tuple[bool, str]:
-    """Returns (success, message)."""
+    """Returns (success, message).
+    'Waiting' message means the player is queued for next round.
+    """
     room = get_room(code)
     if not room:
         return False, "Room not found"
@@ -598,27 +616,40 @@ def join_room(code: str, username: str) -> tuple[bool, str]:
         existing.is_connected = True
         logger.info("%s reconnected to room %s", username, code)
         return True, "Reconnected"
-    # New player can only join during lobby
-    if room.phase != RoomPhase.LOBBY:
-        return False, "Game already in progress"
-    if len(room.players) >= 7:
-        return False, "Room is full (max 7)"
-    room.players.append(Player(username=username))
-    logger.info("%s joined room %s", username, code)
-    return True, "Joined"
+    # Already in waiting queue — reconnect
+    waiting = room.waiting_player(username)
+    if waiting:
+        waiting.is_connected = True
+        logger.info("%s reconnected to waiting queue in room %s", username, code)
+        return True, "Waiting"
+    # Capacity check: active + waiting must not exceed limit
+    if len(room.players) + len(room.waiting_players) >= MAX_ROOM_PLAYERS:
+        return False, f"Room is full (max {MAX_ROOM_PLAYERS})"
+    # New player during lobby — join immediately
+    if room.phase == RoomPhase.LOBBY:
+        room.players.append(Player(username=username))
+        logger.info("%s joined room %s", username, code)
+        return True, "Joined"
+    # Game in progress — add to waiting queue
+    wp = Player(username=username)
+    room.waiting_players.append(wp)
+    logger.info("%s queued in waiting list for room %s", username, code)
+    return True, "Waiting"
 
 
 def leave_room(code: str, username: str) -> bool:
     room = get_room(code)
     if not room:
         return False
+    # Check if in waiting queue first
+    room.waiting_players = [p for p in room.waiting_players if p.username != username]
     room.players = [p for p in room.players if p.username != username]
-    if not room.players:
+    if not room.players and not room.waiting_players:
         remove_room(code)
         return True
     # If admin left, promote next player
     if room.admin == username:
-        room.admin = room.players[0].username
+        room.admin = room.players[0].username if room.players else room.waiting_players[0].username
     return True
 
 
@@ -627,6 +658,13 @@ def exit_room(code: str, username: str) -> tuple[bool, str]:
     room = get_room(code)
     if not room:
         return False, "Room not found"
+
+    # Check if player is in the waiting queue — simple removal
+    wp = room.waiting_player(username)
+    if wp:
+        room.waiting_players = [p for p in room.waiting_players if p.username != username]
+        return True, f"{username} left the waiting queue"
+
     p = room.player(username)
     if not p:
         return False, "Not in room"
@@ -697,13 +735,15 @@ def check_disconnected_turn(room: Room) -> Optional[str]:
 
 
 def is_room_empty(code: str) -> bool:
-    """Check if all players in a room are disconnected or room has no players."""
+    """Check if all players (including waiting) are disconnected or room has no players."""
     room = get_room(code)
     if not room:
         return True
-    if not room.players:
+    if not room.players and not room.waiting_players:
         return True
-    return all(not p.is_connected for p in room.players)
+    all_dc = all(not p.is_connected for p in room.players) if room.players else True
+    all_wait_dc = all(not p.is_connected for p in room.waiting_players) if room.waiting_players else True
+    return all_dc and all_wait_dc
 
 
 def cleanup_empty_room(code: str) -> bool:
@@ -1108,7 +1148,8 @@ def get_starter(room: Room) -> str:
 
 
 def restart_game(room: Room):
-    """Move room back to LOBBY for a new round. Keep players."""
+    """Move room back to LOBBY for a new round. Keep players.
+    Promote any waiting players into the room."""
     room.phase = RoomPhase.LOBBY
     room.pot = 0
     room.round_count = 0
@@ -1131,4 +1172,15 @@ def restart_game(room: Room):
         p.is_viewing = False
         p.is_sitting_out = False
         p.total_bet = 0
+    # Promote waiting players into the room (up to limit)
+    while room.waiting_players and len(room.players) < MAX_ROOM_PLAYERS:
+        wp = room.waiting_players.pop(0)
+        wp.cards = []
+        wp.is_seen = False
+        wp.is_folded = False
+        wp.is_viewing = False
+        wp.is_sitting_out = False
+        wp.total_bet = 0
+        room.players.append(wp)
+        logger.info("Promoted waiting player %s into room %s", wp.username, room.code)
     logger.info("Room %s reset to lobby", room.code)
