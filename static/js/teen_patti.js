@@ -15,7 +15,7 @@ tp = (() => {
   const me = indiex.username;
 
   // Player color palette for avatars
-  const _COLORS = ['#6c5ce7','#00cec9','#e17055','#fdcb6e','#a29bfe','#55efc4','#fab1a0'];
+  const _COLORS = ['#6c5ce7','#00cec9','#e17055','#fdcb6e','#a29bfe','#55efc4','#fab1a0','#fd79a8'];
 
   // Hand strength — server sends hand_strength (0-100%) already computed.
   // Just pick label + colour based on the value.
@@ -215,19 +215,12 @@ tp = (() => {
     }
   }
 
-  // ── RENDER ─────────────────────────────────────────────
-  function render() {
-    if (!state) return;
-    const s = state;
-    const isAdmin = s.admin === me;
-    const isStarter = (s.starter || s.admin) === me;
-    const myPlayer = s.players.find(p => p.username === me);
-    const amWaiting = !myPlayer && s.waiting_players && s.waiting_players.some(w => w.username === me);
+  // ── RENDER SUB-FUNCTIONS ─────────────────────────────────
 
-    // ── WAITING OVERLAY (mid-game join queue) ──
+  /** Show / hide waiting-queue overlay. Returns true if waiting (caller should stop). */
+  function _renderWaiting(s, amWaiting) {
     if (amWaiting) {
       $waitingOverlay.style.display = 'flex';
-      // Hide game elements
       $gameTable.style.display  = 'none';
       $myArea.style.display     = 'none';
       $actions.style.display    = 'none';
@@ -235,102 +228,55 @@ tp = (() => {
       $lobbyPlayers.style.display = 'none';
       $adminLobby.style.display = 'none';
       $overlay.classList.remove('show');
-      // Show info about current game
       const total = s.players.length;
       const waitCount = s.waiting_players ? s.waiting_players.length : 0;
       let info = `${total} player${total !== 1 ? 's' : ''} in game`;
       if (waitCount > 1) info += ` · ${waitCount} waiting`;
       $waitingInfo.textContent = info;
-      return;
+      return true;
     }
     $waitingOverlay.style.display = 'none';
+    return false;
+  }
 
-    // Counts
-    $playerCnt.textContent = s.players.length;
-    $activeCnt.textContent = s.active_count;
-    $roundCnt.textContent  = s.turn_number || 0;
+  /** Render lobby phase. Returns true if lobby (caller should stop). */
+  function _renderLobby(s, isAdmin, isStarter) {
+    if (s.phase !== 'lobby') return false;
+    $gameTable.style.display = 'none';
+    $myArea.style.display    = 'none';
+    $actions.style.display   = 'none';
+    $infoBar.style.display   = 'none';
+    $overlay.classList.remove('show');
+    _turnDeadline = 0;
+    if (_turnTimer) { clearInterval(_turnTimer); _turnTimer = null; }
 
-    // Keep topbar coin badge in sync with live game state
-    if (myPlayer && myPlayer.coins != null) {
-      const $topCoins = document.getElementById('coin-count');
-      if ($topCoins) $topCoins.textContent = myPlayer.coins.toLocaleString();
+    $lobbyPlayers.style.display = 'flex';
+    $lobbyPlayers.innerHTML = s.players.map(p => `
+      <div class="lobby-player ${p.username === s.admin ? 'admin-tag' : ''}">
+        <span class="dot"></span>
+        ${p.username} ${p.username === s.admin ? '👑' : ''}
+        <span style="color:var(--warning);font-size:11px;">🪙 ${p.coins}</span>
+      </div>
+    `).join('');
+
+    $adminLobby.style.display = isStarter ? 'block' : 'none';
+    const $mpToggle = document.getElementById('mode-picker-select');
+    if ($mpToggle) {
+      $mpToggle.style.display = isAdmin ? 'inline-block' : 'none';
+      $mpToggle.value = s.mode_picker || 'admin';
     }
-
-    // ── LOBBY phase ────────────────
-    if (s.phase === 'lobby') {
-      $gameTable.style.display = 'none';
-      $myArea.style.display    = 'none';
-      $actions.style.display   = 'none';
-      $infoBar.style.display   = 'none';
-      $overlay.classList.remove('show');
-      _turnDeadline = 0;
-      if (_turnTimer) { clearInterval(_turnTimer); _turnTimer = null; }
-
-      // Show lobby players
-      $lobbyPlayers.style.display = 'flex';
-      $lobbyPlayers.innerHTML = s.players.map(p => `
-        <div class="lobby-player ${p.username === s.admin ? 'admin-tag' : ''}">
-          <span class="dot"></span>
-          ${p.username} ${p.username === s.admin ? '👑' : ''}
-          <span style="color:var(--warning);font-size:11px;">🪙 ${p.coins}</span>
-        </div>
-      `).join('');
-
-      // Start controls (admin or winner depending on mode_picker)
-      $adminLobby.style.display = isStarter ? 'block' : 'none';
-      // Only admin can change mode_picker toggle
-      const $mpToggle = document.getElementById('mode-picker-select');
-      if ($mpToggle) {
-        $mpToggle.style.display = isAdmin ? 'inline-block' : 'none';
-        $mpToggle.value = s.mode_picker || 'admin';
-      }
-      if (isStarter && s.game_type) {
-        document.getElementById('game-type-select').value = s.game_type;
-      }
-      // Show heading with who can start
-      const $ctrlTitle = document.querySelector('#admin-lobby-ctrl h3');
-      if ($ctrlTitle) {
-        $ctrlTitle.textContent = isAdmin ? '⚙️ Room Admin Controls' : '🏆 Winner\'s Pick — Choose the next mode!';
-      }
-      return;
+    if (isStarter && s.game_type) {
+      document.getElementById('game-type-select').value = s.game_type;
     }
-
-    // ── PLAYING / RESULT phase ─────
-    $lobbyPlayers.style.display = 'none';
-    $adminLobby.style.display   = 'none';
-    $gameTable.style.display     = 'flex';
-    $myArea.style.display        = 'block';
-    $infoBar.style.display       = 'flex';
-
-    $pot.textContent      = s.pot.toLocaleString();
-    $tableVal.textContent = s.table_amount;
-    $seenVal.textContent  = s.table_amount * 2;
-
-    // Table status + turn sound
-    if (s.phase === 'playing') {
-      $tableStatus.textContent = `${s.current_turn}'s turn`;
-      if (s.current_turn === me && prevTurn !== me) {
-        playTurnSound();
-        // Vibrate on mobile when it's your turn
-        if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-      }
-      prevTurn = s.current_turn;
-    } else {
-      $tableStatus.textContent = `🏆 ${s.winner} wins!`;
-      prevTurn = null;
+    const $ctrlTitle = document.querySelector('#admin-lobby-ctrl h3');
+    if ($ctrlTitle) {
+      $ctrlTitle.textContent = isAdmin ? '⚙️ Room Admin Controls' : '🏆 Winner\'s Pick — Choose the next mode!';
     }
+    return true;
+  }
 
-    // ── Turn timer ──
-    if (s.phase === 'playing' && s.turn_deadline) {
-      _turnDeadline = s.turn_deadline * 1000;
-      _turnTimeout = (s.turn_timeout || 30) * 1000;
-      if (!_turnTimer) _turnTimer = setInterval(_updateTurnTimer, 100);
-    } else {
-      _turnDeadline = 0;
-      if (_turnTimer) { clearInterval(_turnTimer); _turnTimer = null; }
-    }
-
-    // ── Mode indicator + joker card ──
+  /** Mode badge + joker card display */
+  function _renderModeBadge(s) {
     if (s.game_type && s.game_type !== 'normal') {
       if (s.game_type === 'joker') {
         $modeBadge.textContent = '🃏 JOKER MODE';
@@ -386,8 +332,10 @@ tp = (() => {
     } else {
       $jokerDisp.style.display = 'none';
     }
+  }
 
-    // ── Render seats ────────────────
+  /** Build player seat tiles */
+  function _renderSeats(s) {
     $seats.innerHTML = s.players.map((p, pIdx) => {
       const isMe   = p.username === me;
       const isTurn = s.current_turn === p.username && s.phase === 'playing';
@@ -398,7 +346,6 @@ tp = (() => {
       else if (p.is_seen)   { statusClass = 'seen'; statusText = 'SEEN'; }
       else                   { statusClass = 'blind'; statusText = 'BLIND'; }
 
-      // Cards
       let cardsHTML = '';
       if (p.cards) {
         cardsHTML = p.cards.map(c => {
@@ -428,30 +375,33 @@ tp = (() => {
         </div>
       `;
     }).join('');
+  }
 
-    // ── Sitting-out popup for self ────
+  /** Sitting-out popup for the local player */
+  function _renderSittingPopup(s, myPlayer) {
     const $sittingPopup = document.getElementById('sitting-out-popup');
-    if ($sittingPopup) {
-      if (myPlayer && myPlayer.is_sitting_out && s.phase === 'playing') {
-        const minC = s.min_coins || 0;
-        $sittingPopup.innerHTML = `
-          <div class="sitting-popup-inner">
-            <div class="sitting-popup-icon">💸</div>
-            <div class="sitting-popup-title">Not Enough Coins</div>
-            <div class="sitting-popup-msg">You need at least <strong>${minC} 🪙</strong> to play (table amount: ${s.table_amount})</div>
-            <div class="sitting-popup-coins">Current balance: <strong>${myPlayer.coins} 🪙</strong></div>
-            <div class="sitting-popup-actions">
-              <button class="sitting-btn request" onclick="tp.requestCoins()">🪙 Request & Refresh Coins</button>
-            </div>
-            <div class="sitting-popup-hint">Ask admin to load coins, then click the button above to check.</div>
-          </div>`;
-        $sittingPopup.style.display = 'flex';
-      } else {
-        $sittingPopup.style.display = 'none';
-      }
+    if (!$sittingPopup) return;
+    if (myPlayer && myPlayer.is_sitting_out && s.phase === 'playing') {
+      const minC = s.min_coins || 0;
+      $sittingPopup.innerHTML = `
+        <div class="sitting-popup-inner">
+          <div class="sitting-popup-icon">💸</div>
+          <div class="sitting-popup-title">Not Enough Coins</div>
+          <div class="sitting-popup-msg">You need at least <strong>${minC} 🪙</strong> to play (table amount: ${s.table_amount})</div>
+          <div class="sitting-popup-coins">Current balance: <strong>${myPlayer.coins} 🪙</strong></div>
+          <div class="sitting-popup-actions">
+            <button class="sitting-btn request" onclick="tp.requestCoins()">🪙 Request & Refresh Coins</button>
+          </div>
+          <div class="sitting-popup-hint">Ask admin to load coins, then click the button above to check.</div>
+        </div>`;
+      $sittingPopup.style.display = 'flex';
+    } else {
+      $sittingPopup.style.display = 'none';
     }
+  }
 
-    // ── My cards (big) ──────────────
+  /** Big card display + hand name + strength bar */
+  function _renderMyCards(s, myPlayer) {
     if (myPlayer && myPlayer.cards) {
       $myCards.innerHTML = myPlayer.cards.map(c => {
         if (c.rank === '?') return `<div class="big-card face-down"></div>`;
@@ -460,13 +410,11 @@ tp = (() => {
           <span class="rank">${c.rank}</span><span class="suit">${c.suit}</span>
         </div>`;
       }).join('');
-      // Hand name — always provided by server when cards are visible
       const cardsRevealed = myPlayer.cards.some(c => c.rank !== '?');
       if (myPlayer.hand_name && cardsRevealed) {
         let hn = myPlayer.hand_name;
         if (s.game_type === 'muflis') hn += ' (lower is better!)';
         $myHand.textContent = hn;
-        // Strength bar — only after cards are revealed, stays entire round
         const str = _getStrength(myPlayer);
         let $sb = document.getElementById('hand-strength-bar');
         if (str) {
@@ -489,20 +437,20 @@ tp = (() => {
       $myCards.innerHTML = '';
       $myHand.textContent = '';
     }
+  }
 
-    // ── Action buttons ──────────────
+  /** Show / hide action buttons for the current player's turn */
+  function _renderActions(s, myPlayer) {
     if (s.phase === 'playing' && s.current_turn === me && myPlayer && !myPlayer.is_folded) {
       $actions.style.display = 'flex';
       let btns = '';
 
       if (myPlayer.is_viewing) {
-        // Mid-view: player peeked at cards, now must Play Seen or Fold
         btns += `<button class="act-btn seen" onclick="tp.doSeen()">
           👁️ Play Seen (${s.table_amount * 2} 🪙)</button>`;
         btns += `<button class="act-btn fold" onclick="tp.confirmFold()">
           🏳️ Fold</button>`;
       } else if (!myPlayer.is_seen) {
-        // Blind: Play Blind or View Cards
         btns += `<button class="act-btn blind" onclick="tp.doBlind()">
           🙈 Play Blind (${s.table_amount} 🪙)</button>`;
         btns += `<button class="act-btn view" onclick="tp.doView()">
@@ -514,7 +462,6 @@ tp = (() => {
             🃏 Show (${s.table_amount} 🪙)</button>`;
         }
       } else {
-        // Seen: normal seen actions
         btns += `<button class="act-btn seen" onclick="tp.doSeen()">
           👁️ Continue Seen (${s.table_amount * 2} 🪙)</button>`;
         btns += `<button class="act-btn fold" onclick="tp.confirmFold()">
@@ -533,8 +480,10 @@ tp = (() => {
     } else {
       $actions.style.display = 'none';
     }
+  }
 
-    // ── Low coins warning (after action, before next turn) ──
+  /** Low-coin warning banner between turns */
+  function _renderLowCoinWarning(s, myPlayer) {
     if (s.phase === 'playing' && myPlayer && !myPlayer.is_folded && !myPlayer.is_sitting_out
         && s.current_turn !== me) {
       const nextCost = myPlayer.is_seen ? s.table_amount * 2 : s.table_amount;
@@ -561,19 +510,28 @@ tp = (() => {
       const existing = document.getElementById('low-coin-warning');
       if (existing) existing.remove();
     }
+  }
 
-    // ── Result phase ────────────────
+  /** Result overlay, sound, confetti, and persistent banner */
+  function _renderResult(s, isStarter) {
     const $resultBanner = document.getElementById('result-banner');
     if (s.phase === 'result') {
-      // Only show overlay + sound ONCE per result
       if (!_resultShown) {
         _resultShown = true;
         $overlay.classList.add('show');
-        $resWinner.textContent = s.winner;
-        $resDetail.textContent = `Total pot: ${s.pot} 🪙`;
-        $resPayout.textContent = `${s.winner} receives ${s.pot} 🪙`;
 
-        // Result overlay buttons — everyone gets "Next Round" (starter) or "Close"
+        const isSplit = s.winners && s.winners.length > 1;
+        if (isSplit) {
+          const share = Math.floor(s.pot / s.winners.length);
+          $resWinner.textContent = s.winners.join(' & ');
+          $resDetail.textContent = `🤝 Pot Split! Total: ${s.pot} 🪙`;
+          $resPayout.textContent = `${share} 🪙 each`;
+        } else {
+          $resWinner.textContent = s.winner;
+          $resDetail.textContent = `Total pot: ${s.pot} 🪙`;
+          $resPayout.textContent = `${s.winner} receives ${s.pot} 🪙`;
+        }
+
         const $resActions = document.getElementById('result-actions');
         if (isStarter) {
           $resActions.innerHTML = `
@@ -592,17 +550,12 @@ tp = (() => {
               Close</button>`;
         }
 
-        // Victory fanfare
         playWinSound();
         if (navigator.vibrate) navigator.vibrate([100,50,100,50,200]);
         _fireConfetti();
-
-        // Refresh top bar coins
         indiex.fetchCoins();
       }
 
-      // Persistent banner — always visible during result phase
-      // (safety net when overlay/popup are closed)
       const starter = s.starter || s.admin;
       if (isStarter) {
         $resultBanner.className = 'result-banner starter';
@@ -616,14 +569,79 @@ tp = (() => {
       }
       $resultBanner.style.display = 'block';
     } else {
-      // Hide banner in non-result phases
       $resultBanner.style.display = 'none';
-      // Close new-round popup only when game actually starts (not on lobby)
       if (s.phase === 'playing') {
         document.getElementById('newround-overlay').classList.remove('show');
       }
       _resultShown = false;
     }
+  }
+
+  // ── RENDER (orchestrator) ──────────────────────────────
+  function render() {
+    if (!state) return;
+    const s = state;
+    const isAdmin = s.admin === me;
+    const isStarter = (s.starter || s.admin) === me;
+    const myPlayer = s.players.find(p => p.username === me);
+    const amWaiting = !myPlayer && s.waiting_players && s.waiting_players.some(w => w.username === me);
+
+    if (_renderWaiting(s, amWaiting)) return;
+
+    // Counts
+    $playerCnt.textContent = s.players.length;
+    $activeCnt.textContent = s.active_count;
+    $roundCnt.textContent  = s.turn_number || 0;
+
+    // Keep topbar coin badge in sync
+    if (myPlayer && myPlayer.coins != null) {
+      const $topCoins = document.getElementById('coin-count');
+      if ($topCoins) $topCoins.textContent = myPlayer.coins.toLocaleString();
+    }
+
+    if (_renderLobby(s, isAdmin, isStarter)) return;
+
+    // ── PLAYING / RESULT phase ─────
+    $lobbyPlayers.style.display = 'none';
+    $adminLobby.style.display   = 'none';
+    $gameTable.style.display     = 'flex';
+    $myArea.style.display        = 'block';
+    $infoBar.style.display       = 'flex';
+
+    $pot.textContent      = s.pot.toLocaleString();
+    $tableVal.textContent = s.table_amount;
+    $seenVal.textContent  = s.table_amount * 2;
+
+    // Table status + turn sound
+    if (s.phase === 'playing') {
+      $tableStatus.textContent = `${s.current_turn}'s turn`;
+      if (s.current_turn === me && prevTurn !== me) {
+        playTurnSound();
+        if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+      }
+      prevTurn = s.current_turn;
+    } else {
+      $tableStatus.textContent = `🏆 ${s.winner} wins!`;
+      prevTurn = null;
+    }
+
+    // Turn timer
+    if (s.phase === 'playing' && s.turn_deadline) {
+      _turnDeadline = s.turn_deadline * 1000;
+      _turnTimeout = (s.turn_timeout || 30) * 1000;
+      if (!_turnTimer) _turnTimer = setInterval(_updateTurnTimer, 100);
+    } else {
+      _turnDeadline = 0;
+      if (_turnTimer) { clearInterval(_turnTimer); _turnTimer = null; }
+    }
+
+    _renderModeBadge(s);
+    _renderSeats(s);
+    _renderSittingPopup(s, myPlayer);
+    _renderMyCards(s, myPlayer);
+    _renderActions(s, myPlayer);
+    _renderLowCoinWarning(s, myPlayer);
+    _renderResult(s, isStarter);
   }
 
   // ── Turn timer countdown ───────────────────────────────

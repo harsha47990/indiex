@@ -114,61 +114,48 @@ def evaluate_hand(cards: list[dict]) -> tuple[int, list[int]]:
     return (HandRank.HIGH_CARD, vals)
 
 
+def _best_hand_with_wilds(cards: list[dict], joker_indices: list[int]) -> tuple[int, list[int]]:
+    """Evaluate the best possible 3-card hand when specific indices are wild.
+
+    Complexity:
+    - 0 wilds  → single evaluate_hand() call
+    - 1 wild   → O(52) — try each possible replacement card
+    - 2 wilds  → O(1)  — always a Trail of the non-wild card's rank
+    - 3 wilds  → O(1)  — Trail of Aces
+    """
+    n = len(joker_indices)
+    if n == 0:
+        return evaluate_hand(cards)
+    if n == 3:
+        return (HandRank.TRAIL, [12, 12, 12])       # Trail of Aces
+    if n == 2:
+        # Both wilds become the non-wild card's rank → guaranteed Trail
+        non_wild = next(i for i in range(3) if i not in joker_indices)
+        rv = RANK_VALUE[cards[non_wild]["rank"]]
+        return (HandRank.TRAIL, [rv, rv, rv])
+
+    # n == 1: try every card in the deck (52 iterations — fast enough)
+    idx = joker_indices[0]
+    all_cards = [{"rank": r, "suit": s} for s in SUITS for r in RANKS]
+    best: tuple = (0, [])
+    for repl in all_cards:
+        h = list(cards); h[idx] = repl
+        ev = evaluate_hand(h)
+        if ev > best:
+            best = ev
+    return best
+
+
 def evaluate_hand_joker(cards: list[dict], joker_rank: str) -> tuple[int, list[int]]:
     """Evaluate the best possible hand when cards matching joker_rank are wild."""
     joker_indices = [i for i, c in enumerate(cards) if c["rank"] == joker_rank]
-    if not joker_indices:
-        return evaluate_hand(cards)
-    n = len(joker_indices)
-    if n == 3:
-        return (HandRank.TRAIL, [12, 12, 12])   # Trail of Aces
-    all_cards = [{
-        "rank": r, "suit": s} for s in SUITS for r in RANKS]
-    best: tuple = (0, [])
-    if n == 1:
-        idx = joker_indices[0]
-        for repl in all_cards:
-            h = list(cards); h[idx] = repl
-            ev = evaluate_hand(h)
-            if ev > best:
-                best = ev
-    else:                                        # n == 2
-        i0, i1 = joker_indices
-        for r1 in all_cards:
-            for r2 in all_cards:
-                h = list(cards); h[i0] = r1; h[i1] = r2
-                ev = evaluate_hand(h)
-                if ev > best:
-                    best = ev
-    return best
+    return _best_hand_with_wilds(cards, joker_indices)
 
 
 def evaluate_hand_zandu(cards: list[dict], joker_ranks: list[str]) -> tuple[int, list[int]]:
     """Evaluate the best possible hand when cards matching ANY of joker_ranks are wild."""
     joker_indices = [i for i, c in enumerate(cards) if c["rank"] in joker_ranks]
-    if not joker_indices:
-        return evaluate_hand(cards)
-    n = len(joker_indices)
-    if n == 3:
-        return (HandRank.TRAIL, [12, 12, 12])   # Trail of Aces
-    all_cards = [{"rank": r, "suit": s} for s in SUITS for r in RANKS]
-    best: tuple = (0, [])
-    if n == 1:
-        idx = joker_indices[0]
-        for repl in all_cards:
-            h = list(cards); h[idx] = repl
-            ev = evaluate_hand(h)
-            if ev > best:
-                best = ev
-    else:                                        # n == 2
-        i0, i1 = joker_indices
-        for r1 in all_cards:
-            for r2 in all_cards:
-                h = list(cards); h[i0] = r1; h[i1] = r2
-                ev = evaluate_hand(h)
-                if ev > best:
-                    best = ev
-    return best
+    return _best_hand_with_wilds(cards, joker_indices)
 
 
 def evaluate_hand_2card(cards: list[dict]) -> tuple[int, list[int]]:
@@ -423,6 +410,7 @@ class Room:
     round_count: int = 0                   # rounds completed (incremented each full cycle)
     turn_number: int = 0                   # absolute turn number in this deal
     winner: Optional[str] = None
+    winners: list[str] = field(default_factory=list)  # multiple winners on pot split
     last_winner_index: int = 0             # for next-game rotation
     deck: list[dict] = field(default_factory=list)
     last_sideshow: Optional[dict] = field(default=None)  # transient reveal data
@@ -544,6 +532,7 @@ class Room:
             "round_count": self.round_count,
             "turn_number": self.turn_number,
             "winner": self.winner,
+            "winners": self.winners,
             "active_count": self.active_count(),
             "side_show_unlocked": self.round_count >= 3,
             "game_type": self.game_type,
@@ -638,15 +627,37 @@ def join_room(code: str, username: str) -> tuple[bool, str]:
 
 
 def leave_room(code: str, username: str) -> bool:
+    """Remove a player from a room (lobby-only safe path).
+
+    For mid-game exits use exit_room() which handles folding / index
+    adjustment.  leave_room still adjusts indices defensively in case it
+    is ever called during an active game.
+    """
     room = get_room(code)
     if not room:
         return False
     # Check if in waiting queue first
     room.waiting_players = [p for p in room.waiting_players if p.username != username]
+
+    # Find index before removal (for adjusting indices)
+    exit_idx = next((i for i, pl in enumerate(room.players) if pl.username == username), None)
     room.players = [p for p in room.players if p.username != username]
+
     if not room.players and not room.waiting_players:
         remove_room(code)
         return True
+
+    # Adjust turn / winner indices that shifted after removal
+    if exit_idx is not None and room.players:
+        if exit_idx < room.current_turn:
+            room.current_turn -= 1
+        if room.current_turn >= len(room.players):
+            room.current_turn = room.current_turn % len(room.players)
+        if exit_idx < room.last_winner_index:
+            room.last_winner_index -= 1
+        if room.last_winner_index >= len(room.players):
+            room.last_winner_index = 0
+
     # If admin left, promote next player
     if room.admin == username:
         room.admin = room.players[0].username if room.players else room.waiting_players[0].username
@@ -993,6 +1004,12 @@ def action_show(room: Room, username: str) -> tuple[bool, str]:
     jk = room.joker_card["rank"] if room.joker_card else None
     jk_ranks = room.active_joker_ranks()
     result = compare_hands(p.cards, opponent.cards, room.game_type, jk, jk_ranks)
+
+    # In Zandu/AK47, an exact tie (e.g. both Trail of Aces) → pot split
+    if result == 0 and room.game_type in ("zandu", "ak47"):
+        _award_split(room, [p.username, opponent.username])
+        return True, f"Show! It's a tie — pot split between {p.username} & {opponent.username}! 🤝"
+
     if result > 0:
         winner = p        # initiator strictly better
     else:
@@ -1095,15 +1112,19 @@ def _check_auto_win(room: Room):
         jk = room.joker_card["rank"] if room.joker_card else None
         jk_ranks = room.active_joker_ranks()
         result = compare_hands(cp.cards, opponent.cards, room.game_type, jk, jk_ranks)
-        # Broke player is the "initiator" of this forced show → loses on tie
-        if result > 0:
-            winner = cp
-        else:
-            winner = opponent
         logger.info("Auto-show in room %s — %s can't afford %d coins",
                     room.code, cp.username, min_cost)
-        room.last_auto_event = f"⚠️ {cp.username} can't afford {min_cost} 🪙 — Auto-Show! {winner.username} wins"
-        _award_winner(room, winner.username)
+
+        # In Zandu/AK47, exact tie (e.g. both Trail of Aces) → pot split
+        if result == 0 and room.game_type in ("zandu", "ak47"):
+            room.last_auto_event = (f"⚠️ {cp.username} can't afford {min_cost} 🪙 — Auto-Show! "
+                                    f"It's a tie — pot split between {cp.username} & {opponent.username}! 🤝")
+            _award_split(room, [cp.username, opponent.username])
+        else:
+            # Broke player is the "initiator" of this forced show → loses on tie
+            winner = cp if result > 0 else opponent
+            room.last_auto_event = f"⚠️ {cp.username} can't afford {min_cost} 🪙 — Auto-Show! {winner.username} wins"
+            _award_winner(room, winner.username)
     else:
         # More than 2 active — auto-fold the broke player
         logger.info("Auto-fold in room %s — %s can't afford %d coins",
@@ -1115,7 +1136,7 @@ def _check_auto_win(room: Room):
 
 
 def _award_winner(room: Room, winner_username: str):
-    """Award pot to winner and move to RESULT phase.
+    """Award pot to a single winner and move to RESULT phase.
     Commission is taken from the total pot here (not per-bet)."""
     commission = int(room.pot * COMMISSION_RATE)
     payout = room.pot - commission
@@ -1124,6 +1145,7 @@ def _award_winner(room: Room, winner_username: str):
     if winner:
         winner.coins += payout
     room.winner = winner_username
+    room.winners = [winner_username]
     room.last_winner_username = winner_username
     room.phase = RoomPhase.RESULT
 
@@ -1136,6 +1158,36 @@ def _award_winner(room: Room, winner_username: str):
     logger.info(
         "Room %s — Winner: %s  Pot: %d",
         room.code, winner_username, room.pot,
+    )
+
+
+def _award_split(room: Room, usernames: list[str]):
+    """Split pot equally among multiple winners (tie in Zandu/AK47).
+    Remainder coins go to the first player in the list."""
+    commission = int(room.pot * COMMISSION_RATE)
+    payout = room.pot - commission
+    room.house_commission = commission
+    share = payout // len(usernames)
+    remainder = payout - share * len(usernames)
+
+    for i, uname in enumerate(usernames):
+        p = room.player(uname)
+        if p:
+            p.coins += share + (remainder if i == 0 else 0)
+
+    room.winner = " & ".join(usernames)  # display string
+    room.winners = list(usernames)
+    room.last_winner_username = usernames[0]  # first listed gets starter privilege
+    room.phase = RoomPhase.RESULT
+
+    for i, p in enumerate(room.players):
+        if p.username == usernames[0]:
+            room.last_winner_index = i
+            break
+
+    logger.info(
+        "Room %s — Pot SPLIT between %s  Pot: %d  Share: %d each",
+        room.code, usernames, room.pot, share,
     )
 
 
@@ -1155,6 +1207,7 @@ def restart_game(room: Room):
     room.round_count = 0
     room.turn_number = 0
     room.winner = None
+    room.winners = []
     room.deck = []
     room.last_sideshow = None
     room.last_auto_event = None
