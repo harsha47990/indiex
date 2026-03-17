@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 COMMISSION_RATE = 0.05  # 5% house commission
 TURN_TIMEOUT = 90       # seconds per turn
+AK47_JOKER_RANKS = ["A", "K", "4", "7"]  # fixed wild ranks for AK47 mode
 
 
 def _add_to_pot(room, cost: int):
@@ -141,6 +142,34 @@ def evaluate_hand_joker(cards: list[dict], joker_rank: str) -> tuple[int, list[i
     return best
 
 
+def evaluate_hand_zandu(cards: list[dict], joker_ranks: list[str]) -> tuple[int, list[int]]:
+    """Evaluate the best possible hand when cards matching ANY of joker_ranks are wild."""
+    joker_indices = [i for i, c in enumerate(cards) if c["rank"] in joker_ranks]
+    if not joker_indices:
+        return evaluate_hand(cards)
+    n = len(joker_indices)
+    if n == 3:
+        return (HandRank.TRAIL, [12, 12, 12])   # Trail of Aces
+    all_cards = [{"rank": r, "suit": s} for s in SUITS for r in RANKS]
+    best: tuple = (0, [])
+    if n == 1:
+        idx = joker_indices[0]
+        for repl in all_cards:
+            h = list(cards); h[idx] = repl
+            ev = evaluate_hand(h)
+            if ev > best:
+                best = ev
+    else:                                        # n == 2
+        i0, i1 = joker_indices
+        for r1 in all_cards:
+            for r2 in all_cards:
+                h = list(cards); h[i0] = r1; h[i1] = r2
+                ev = evaluate_hand(h)
+                if ev > best:
+                    best = ev
+    return best
+
+
 def evaluate_hand_2card(cards: list[dict]) -> tuple[int, list[int]]:
     """2-card mode: determine the best 3-card hand achievable with a phantom card.
     Only 2 cards are dealt; the system imagines the best possible 3rd card.
@@ -193,12 +222,17 @@ def hand_name_2card(cards: list[dict]) -> str:
 
 
 def _evaluate(cards: list[dict], game_type: str = "normal",
-              joker_rank: str | None = None) -> tuple[int, list[int]]:
+              joker_rank: str | None = None,
+              joker_ranks: list[str] | None = None) -> tuple[int, list[int]]:
     """Dispatch to the correct evaluator based on game type."""
     if game_type == "2card":
         return evaluate_hand_2card(cards)
     if game_type == "4card":
         return evaluate_hand_4card(cards)
+    if game_type == "zandu" and joker_ranks:
+        return evaluate_hand_zandu(cards, joker_ranks)
+    if game_type == "ak47":
+        return evaluate_hand_zandu(cards, AK47_JOKER_RANKS)
     if game_type == "joker" and joker_rank:
         return evaluate_hand_joker(cards, joker_rank)
     return evaluate_hand(cards)
@@ -206,11 +240,12 @@ def _evaluate(cards: list[dict], game_type: str = "normal",
 
 def compare_hands(a: list[dict], b: list[dict],
                   game_type: str = "normal",
-                  joker_rank: str | None = None) -> int:
+                  joker_rank: str | None = None,
+                  joker_ranks: list[str] | None = None) -> int:
     """Return  1 if a wins,  -1 if b wins,  0 if draw.
     Joker mode: wild cards considered.  Muflis mode: result inverted."""
-    ra, ta = _evaluate(a, game_type, joker_rank)
-    rb, tb = _evaluate(b, game_type, joker_rank)
+    ra, ta = _evaluate(a, game_type, joker_rank, joker_ranks)
+    rb, tb = _evaluate(b, game_type, joker_rank, joker_ranks)
     if ra != rb:
         result = 1 if ra > rb else -1
     else:
@@ -225,14 +260,19 @@ def compare_hands(a: list[dict], b: list[dict],
 
 
 def hand_name(cards: list[dict], game_type: str = "normal",
-              joker_rank: str | None = None) -> str:
+              joker_rank: str | None = None,
+              joker_ranks: list[str] | None = None) -> str:
     if game_type == "2card":
         return hand_name_2card(cards)
     if game_type == "4card":
         return hand_name_4card(cards)
-    rank, _ = _evaluate(cards, game_type, joker_rank)
+    rank, _ = _evaluate(cards, game_type, joker_rank, joker_ranks)
     label = HAND_NAMES[rank]
     if game_type == "joker" and joker_rank and any(c["rank"] == joker_rank for c in cards):
+        label += " (Joker)"
+    if game_type == "zandu" and joker_ranks and any(c["rank"] in joker_ranks for c in cards):
+        label += " (Joker)"
+    if game_type == "ak47" and any(c["rank"] in AK47_JOKER_RANKS for c in cards):
         label += " (Joker)"
     return label
 
@@ -295,12 +335,13 @@ _PCT_KEYS = sorted(_PCT)                  # for bisect fallback
 
 
 def hand_strength_pct(cards: list[dict], game_type: str = "normal",
-                      joker_rank: str | None = None) -> int:
+                      joker_rank: str | None = None,
+                      joker_ranks: list[str] | None = None) -> int:
     """Return 0-100 % showing what fraction of all possible hands yours beats.
     For muflis the scale is simply inverted (100 − normal)."""
     if not cards:
         return 0
-    rank, tb = _evaluate(cards, game_type, joker_rank)
+    rank, tb = _evaluate(cards, game_type, joker_rank, joker_ranks)
     score = _hand_score(rank, tb)
     # Exact lookup, or nearest lower score via bisect
     if score in _PCT:
@@ -330,7 +371,8 @@ class Player:
     is_sitting_out: bool = False   # not enough coins to play this round
 
     def public_dict(self, reveal_cards: bool = False, for_self: bool = False,
-                    game_type: str = "normal", joker_rank: str | None = None) -> dict:
+                    game_type: str = "normal", joker_rank: str | None = None,
+                    joker_ranks: list[str] | None = None) -> dict:
         d = {
             "username": self.username,
             "coins": self.coins,
@@ -353,8 +395,8 @@ class Player:
             d["card_count"] = len(self.cards)
         if show_cards:
             d["cards"] = self.cards
-            d["hand_name"] = hand_name(self.cards, game_type, joker_rank)
-            d["hand_strength"] = hand_strength_pct(self.cards, game_type, joker_rank)
+            d["hand_name"] = hand_name(self.cards, game_type, joker_rank, joker_ranks)
+            d["hand_strength"] = hand_strength_pct(self.cards, game_type, joker_rank, joker_ranks)
         return d
 
 
@@ -384,12 +426,16 @@ class Room:
     deck: list[dict] = field(default_factory=list)
     last_sideshow: Optional[dict] = field(default=None)  # transient reveal data
     last_auto_event: Optional[str] = field(default=None)  # auto-show/fold message
-    game_type: str = "normal"                  # "normal", "joker", "muflis"
+    game_type: str = "normal"                  # "normal", "joker", "muflis", "zandu"
     joker_card: Optional[dict] = field(default=None)  # revealed joker (joker mode)
+    zandu_jokers: list[dict] = field(default_factory=list)  # 3 joker cards (zandu mode)
+    zandu_revealed: int = 0                      # how many jokers are face-up (1-3)
     mode_picker: str = "admin"                 # "admin" = admin always picks, "winner" = last winner picks
     last_winner_username: Optional[str] = None  # username of last round's winner
     house_commission: int = 0                    # accumulated commission this round
     turn_start_time: float = 0.0                 # Unix ts when current turn started
+    round_start_active: int = 0                  # active count when current round started
+    round_turns_taken: int = 0                   # turns taken in current round
 
     # ── helpers ─────────────────────────────────────────────
     def player(self, username: str) -> Optional[Player]:
@@ -417,10 +463,21 @@ class Room:
         self.current_turn = self._next_active(self.current_turn)
         self.turn_number += 1
         self.turn_start_time = time.time()
-        # Track full rounds (one cycle through active players)
-        active = self.active_count()
-        if active > 0 and self.turn_number > 0 and self.turn_number % active == 0:
+        # Track full rounds — count turns since round started
+        self.round_turns_taken += 1
+        if self.round_start_active > 0 and self.round_turns_taken >= self.round_start_active:
             self.round_count += 1
+            self.round_turns_taken = 0
+            self.round_start_active = self.active_count()  # snapshot for next round
+            # Zandu: reveal next joker after each completed round
+            if (self.game_type == "zandu"
+                    and self.zandu_revealed < len(self.zandu_jokers)):
+                self.zandu_revealed += 1
+                new_jk = self.zandu_jokers[self.zandu_revealed - 1]
+                self.last_auto_event = (
+                    f"🃏 Zandu — Joker #{self.zandu_revealed} revealed: "
+                    f"{new_jk['rank']}{new_jk['suit']} is now wild!"
+                )
 
     def current_player(self) -> Optional[Player]:
         if 0 <= self.current_turn < len(self.players):
@@ -430,6 +487,14 @@ class Room:
     def seen_amount(self) -> int:
         return self.table_amount * 2
 
+    def active_joker_ranks(self) -> list[str] | None:
+        """Return list of active joker ranks, or None if not applicable."""
+        if self.game_type == "zandu" and self.zandu_jokers:
+            return [c["rank"] for c in self.zandu_jokers[:self.zandu_revealed]]
+        if self.game_type == "ak47":
+            return AK47_JOKER_RANKS
+        return None
+
     # ── state for broadcast ─────────────────────────────────
     def public_state(self, for_username: str = "") -> dict:
         """Build a JSON-serialisable state dict.
@@ -437,12 +502,14 @@ class Room:
         or we're in RESULT phase."""
         reveal = self.phase == RoomPhase.RESULT
         jk = self.joker_card["rank"] if self.joker_card else None
+        jk_ranks = self.active_joker_ranks()
         players_data = []
         for p in self.players:
             is_self = p.username == for_username
             players_data.append(p.public_dict(
                 reveal_cards=reveal, for_self=is_self,
                 game_type=self.game_type, joker_rank=jk,
+                joker_ranks=jk_ranks,
             ))
 
         cp = self.current_player()
@@ -474,7 +541,19 @@ class Room:
             "min_coins": self.table_amount * MIN_COIN_MULTIPLIER if self.table_amount else 0,
             "turn_deadline": self.turn_start_time + TURN_TIMEOUT if self.phase == RoomPhase.PLAYING and self.turn_start_time else 0,
             "turn_timeout": TURN_TIMEOUT,
+            "zandu_jokers": self._zandu_public() if self.game_type == "zandu" else None,
+            "zandu_revealed": self.zandu_revealed if self.game_type == "zandu" else 0,
         }
+
+    def _zandu_public(self) -> list[dict | None]:
+        """Return the 3 zandu joker cards — revealed ones shown, hidden ones as None."""
+        result = []
+        for i, card in enumerate(self.zandu_jokers):
+            if i < self.zandu_revealed:
+                result.append(card)
+            else:
+                result.append(None)  # face-down
+        return result
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -562,11 +641,24 @@ def exit_room(code: str, username: str) -> tuple[bool, str]:
             room.advance_turn()
         _check_auto_win(room)
 
+    # Find index before removal (for adjusting indices below)
+    exit_idx = next(i for i, pl in enumerate(room.players) if pl.username == username)
+
     # Remove from room
     room.players = [pl for pl in room.players if pl.username != username]
     if not room.players:
         remove_room(code)
         return True, "Room deleted — all players left"
+
+    # Adjust indices that shifted after removal
+    if exit_idx < room.current_turn:
+        room.current_turn -= 1
+    if room.current_turn >= len(room.players):
+        room.current_turn = room.current_turn % len(room.players)
+    if exit_idx < room.last_winner_index:
+        room.last_winner_index -= 1
+    if room.last_winner_index >= len(room.players):
+        room.last_winner_index = 0
 
     # Promote admin if needed
     if room.admin == username:
@@ -665,6 +757,7 @@ def start_game(room: Room, table_amount: int, game_type: str = "normal") -> tupl
     room.pot = 0
     room.round_count = 0
     room.turn_number = 0
+    room.round_turns_taken = 0
     room.winner = None
 
     # Reset players
@@ -685,8 +778,13 @@ def start_game(room: Room, table_amount: int, game_type: str = "normal") -> tupl
     # Game type setup
     room.game_type = game_type
     room.joker_card = None
+    room.zandu_jokers = []
+    room.zandu_revealed = 0
     if game_type == "joker" and room.deck:
         room.joker_card = room.deck.pop()
+    elif game_type == "zandu" and len(room.deck) >= 3:
+        room.zandu_jokers = [room.deck.pop() for _ in range(3)]
+        room.zandu_revealed = 1  # first joker face-up
 
     # Ante: deduct 1× table_amount from every eligible player
     for p in room.players:
@@ -700,9 +798,15 @@ def start_game(room: Room, table_amount: int, game_type: str = "normal") -> tupl
     if room.players[room.current_turn].is_folded:
         room.current_turn = room._next_active(room.current_turn)
     room.turn_start_time = time.time()
+    room.round_start_active = room.active_count()  # snapshot for round counting
 
     if game_type == "joker" and room.joker_card:
         mode_msg = f"\U0001f0cf Joker mode \u2014 {room.joker_card['rank']}{room.joker_card['suit']} is wild!"
+    elif game_type == "zandu" and room.zandu_jokers:
+        jk1 = room.zandu_jokers[0]
+        mode_msg = f"\U0001f0cf Zandu mode \u2014 3 Jokers! {jk1['rank']}{jk1['suit']} is wild, 2 more hidden!"
+    elif game_type == "ak47":
+        mode_msg = "\U0001f52b AK47 mode \u2014 A, K, 4, 7 are wild!"
     elif game_type == "muflis":
         mode_msg = "\U0001f504 Muflis mode \u2014 lowest hand wins!"
     elif game_type == "2card":
@@ -847,7 +951,8 @@ def action_show(room: Room, username: str) -> tuple[bool, str]:
     opponent = active[0] if active[0].username != username else active[1]
 
     jk = room.joker_card["rank"] if room.joker_card else None
-    result = compare_hands(p.cards, opponent.cards, room.game_type, jk)
+    jk_ranks = room.active_joker_ranks()
+    result = compare_hands(p.cards, opponent.cards, room.game_type, jk, jk_ranks)
     if result > 0:
         winner = p        # initiator strictly better
     else:
@@ -893,7 +998,8 @@ def action_sideshow(room: Room, username: str) -> tuple[bool, str]:
 
     # Compare
     jk = room.joker_card["rank"] if room.joker_card else None
-    result = compare_hands(p.cards, prev_player.cards, room.game_type, jk)
+    jk_ranks = room.active_joker_ranks()
+    result = compare_hands(p.cards, prev_player.cards, room.game_type, jk, jk_ranks)
 
     # Store reveal data so router can send it privately to both players
     room.last_sideshow = {
@@ -901,8 +1007,8 @@ def action_sideshow(room: Room, username: str) -> tuple[bool, str]:
         "opponent": prev_player.username,
         "challenger_cards": list(p.cards),
         "opponent_cards": list(prev_player.cards),
-        "challenger_hand": hand_name(p.cards, room.game_type, jk),
-        "opponent_hand": hand_name(prev_player.cards, room.game_type, jk),
+        "challenger_hand": hand_name(p.cards, room.game_type, jk, jk_ranks),
+        "opponent_hand": hand_name(prev_player.cards, room.game_type, jk, jk_ranks),
         "loser": username if result <= 0 else prev_player.username,
     }
 
@@ -947,7 +1053,8 @@ def _check_auto_win(room: Room):
         # Auto-show (free — they have no coins to pay)
         opponent = active[0] if active[0].username != cp.username else active[1]
         jk = room.joker_card["rank"] if room.joker_card else None
-        result = compare_hands(cp.cards, opponent.cards, room.game_type, jk)
+        jk_ranks = room.active_joker_ranks()
+        result = compare_hands(cp.cards, opponent.cards, room.game_type, jk, jk_ranks)
         # Broke player is the "initiator" of this forced show → loses on tie
         if result > 0:
             winner = cp
@@ -1011,8 +1118,12 @@ def restart_game(room: Room):
     room.last_sideshow = None
     room.last_auto_event = None
     room.joker_card = None
+    room.zandu_jokers = []
+    room.zandu_revealed = 0
     room.house_commission = 0
     room.turn_start_time = 0.0
+    room.round_start_active = 0
+    room.round_turns_taken = 0
     for p in room.players:
         p.cards = []
         p.is_seen = False

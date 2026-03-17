@@ -5,9 +5,9 @@
   "display_name": "anurag",
   "role": "user",
   "must_reset_password": false,
-  "coins": 3020,
-  "session_key": null,
-  "last_activity": null,
+  "coins": 2954,
+  "session_key": "4e1be327-f6cc-4510-b624-f4960a4d53e4",
+  "last_activity": 1773761353.7726862,
   "created_at": "2026-03-12T19:03:02.363989+00:00",
   "created_by": "admin"
 }

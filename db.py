@@ -22,6 +22,11 @@ USERS_DIR = BASE_DIR / "data" / "users"
 # Ensure directory exists at import time
 USERS_DIR.mkdir(parents=True, exist_ok=True)
 
+# In-memory session cache: session_key → username
+# Avoids O(n) file scan on every verify_session / heartbeat.
+# Populated lazily — first lookup after restart falls back to scan.
+_session_cache: dict[str, str] = {}
+
 
 # ═══════════════════════════════════════════════════════════════════════════
 #  LOW-LEVEL PER-USER FILE I/O  (private)
@@ -212,6 +217,9 @@ def update_password(username: str, new_hash: str, must_reset: bool = False,
     user["password_hash"] = new_hash
     user["must_reset_password"] = must_reset
     if clear_session:
+        old_key = user.get("session_key")
+        if old_key:
+            _session_cache.pop(old_key, None)
         user["session_key"] = None
         user["last_activity"] = None
     _save_user(user)
@@ -225,13 +233,31 @@ def update_password(username: str, new_hash: str, must_reset: bool = False,
 
 def get_user_by_session(session_key: str, max_age: float) -> Optional[dict]:
     """Return user dict for a valid (non-expired) session, or None.
-    Automatically clears expired sessions."""
+    Uses in-memory cache for O(1) lookups; falls back to scan on cache miss."""
     if not session_key:
         return None
+
+    # Fast path: cache hit — load only that one user file
+    cached_username = _session_cache.get(session_key)
+    if cached_username:
+        user = _load_user(cached_username)
+        if user and user.get("session_key") == session_key:
+            last = user.get("last_activity")
+            if last and (time() - last) < max_age:
+                return user
+            # Expired — clear it
+            user["session_key"] = None
+            user["last_activity"] = None
+            _save_user(user)
+        _session_cache.pop(session_key, None)
+        return None
+
+    # Slow path: cache miss (first call after server restart) — scan all
     for user in _iter_all_users():
         if user.get("session_key") == session_key:
             last = user.get("last_activity")
             if last and (time() - last) < max_age:
+                _session_cache[session_key] = user["username"]  # populate cache
                 return user
             # Expired — clear it
             user["session_key"] = None
@@ -250,17 +276,34 @@ def save_session(username: str, session_key: str) -> None:
     """Write a session key + current timestamp for the user."""
     user = _load_user(username)
     if user:
+        # Evict old session from cache
+        old_key = user.get("session_key")
+        if old_key and old_key != session_key:
+            _session_cache.pop(old_key, None)
         user["session_key"] = session_key
         user["last_activity"] = time()
         _save_user(user)
+        _session_cache[session_key] = username
 
 
 def touch_session(session_key: str) -> None:
     """Update last_activity timestamp for the session."""
+    # Fast path via cache
+    cached_username = _session_cache.get(session_key)
+    if cached_username:
+        user = _load_user(cached_username)
+        if user and user.get("session_key") == session_key:
+            user["last_activity"] = time()
+            _save_user(user)
+            return
+        _session_cache.pop(session_key, None)
+        return
+    # Slow fallback
     for user in _iter_all_users():
         if user.get("session_key") == session_key:
             user["last_activity"] = time()
             _save_user(user)
+            _session_cache[session_key] = user["username"]
             return
 
 
@@ -268,6 +311,18 @@ def clear_session(session_key: str) -> None:
     """Remove a session on logout."""
     if not session_key:
         return
+    # Fast path via cache
+    cached_username = _session_cache.get(session_key)
+    if cached_username:
+        user = _load_user(cached_username)
+        if user and user.get("session_key") == session_key:
+            user["session_key"] = None
+            user["last_activity"] = None
+            _save_user(user)
+            logger.info("Session cleared for user '%s'", cached_username)
+        _session_cache.pop(session_key, None)
+        return
+    # Slow fallback
     for user in _iter_all_users():
         if user.get("session_key") == session_key:
             user["session_key"] = None

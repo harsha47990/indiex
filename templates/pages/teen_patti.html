@@ -1,5 +1,5 @@
 <!-- pages/teen_patti.html — Multiplayer Teen Patti (page fragment) -->
-<link rel="stylesheet" href="/static/css/teen_patti.css?v=12">
+<link rel="stylesheet" href="/static/css/teen_patti.css?v=13">
 
 <div class="tp">
   <a class="tp-back" id="tp-back-link" href="/games">← Back to Games</a>
@@ -7,8 +7,8 @@
   <!-- ════════ LOBBY SCREEN ════════ -->
   <div id="lobby-screen">
     <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:4px;">
-      <img src="/static/logo.png" alt="" style="width:48px;height:48px;border-radius:12px;filter:drop-shadow(0 2px 10px rgba(108,92,231,.3));" />
-      <h1 class="lobby-title" style="margin-bottom:0;">🃏 Teen Patti</h1>
+      <img src="/static/3patti.png" alt="Teen Patti" style="width:52px;height:52px;border-radius:12px;filter:drop-shadow(0 2px 10px rgba(255,215,0,.35));" />
+      <h1 class="lobby-title" style="margin-bottom:0;">Teen Patti</h1>
     </div>
     <p class="lobby-sub">Create a room or join an existing one to play with friends</p>
 
@@ -55,10 +55,11 @@
       <div class="rules-card">
         <h3>🎲 How a Round Works</h3>
         <ol>
-          <li><strong>Room Admin</strong> sets the <em>Table Amount</em> and starts the game</li>
-          <li>Each player is dealt <strong>3 cards</strong> (or 2 in 2-Card mode) face down</li>
+          <li><strong>Room Admin</strong> sets the <em>Table Amount</em>, picks a <em>Game Mode</em>, and starts the game</li>
+          <li>Each player is dealt cards face down (3 cards normally, 2 in 2-Card, 4 in 4-Card mode)</li>
           <li>Players take turns clockwise — you can play <strong>Blind</strong> (without seeing cards) or <strong>Seen</strong> (after seeing cards)</li>
           <li>Each turn you must bet to stay in, or <strong>Fold</strong> to drop out</li>
+          <li>After <strong>3 full rounds</strong> of betting, <strong>Side Show</strong> is unlocked (compare privately with previous player)</li>
           <li>When only <strong>2 players</strong> remain, either can call a <strong>Show</strong> to compare hands</li>
           <li>The <strong>winner</strong> takes the entire pot!</li>
         </ol>
@@ -70,6 +71,15 @@
           <li><strong>Seen bet</strong> = 2× Table Amount (e.g. 20 🪙)</li>
           <li>Bets go into the <strong>Pot</strong> — winner takes all</li>
           <li>If you can't afford the bet, you're <strong>auto-folded</strong></li>
+        </ul>
+      </div>
+      <div class="rules-card">
+        <h3>⏰ Turn Timer &amp; Auto-Actions</h3>
+        <p>Each player has <strong>90 seconds</strong> per turn. If time runs out, you're <strong>auto-folded</strong>.</p>
+        <ul>
+          <li><strong>Auto-Fold:</strong> If you can't afford the minimum bet, you're folded automatically</li>
+          <li><strong>Auto-Show:</strong> If only 2 remain and you can't afford to bet, a free show is triggered — you still have a chance to win!</li>
+          <li><strong>Disconnected:</strong> If it's your turn and you're offline, you're auto-folded</li>
         </ul>
       </div>
     </div>
@@ -135,29 +145,36 @@
     <div id="tab-actions" class="rules-content">
       <div class="rules-card">
         <h3>🙈 Blind</h3>
-        <p>Play without seeing your cards. Costs <strong>1× Table Amount</strong>. You stay "blind" and can see your cards later.</p>
+        <p>Play without seeing your cards. Costs <strong>1× Table Amount</strong>. You stay "blind" and can peek later.</p>
+        <p class="rules-note">💡 Once you view or play seen, you can never go back to blind.</p>
       </div>
       <div class="rules-card">
-        <h3>👁️ Seen</h3>
-        <p>Look at your cards. Costs <strong>2× Table Amount</strong> per turn. Once seen, you stay seen.</p>
+        <h3>👁️ View (Peek)</h3>
+        <p>Peek at your cards for <strong>free</strong> — no cost, no turn advance. After viewing, you <strong>must</strong> choose: <strong>Play Seen</strong> or <strong>Fold</strong> (same turn).</p>
+      </div>
+      <div class="rules-card">
+        <h3>🔓 Play Seen</h3>
+        <p>Confirm you've seen your cards and continue playing. Costs <strong>2× Table Amount</strong> per turn from now on. Once seen, you stay seen for the rest of the round.</p>
       </div>
       <div class="rules-card">
         <h3>🏳️ Fold</h3>
-        <p>Drop out of the round. You lose all coins you've bet so far.</p>
+        <p>Drop out of the round. You lose all coins you've bet so far. The pot stays for the remaining players.</p>
       </div>
       <div class="rules-card">
-        <h3>🃏 Show</h3>
-        <p>Available when only <strong>2 players remain</strong>. Both players reveal their cards. The better hand wins the pot.</p>
+        <h3>🔍 Show</h3>
+        <p>Available when only <strong>2 players remain</strong>. Both players reveal their cards and the better hand wins the pot.</p>
         <ul>
           <li>Blind player pays <strong>1× Table Amount</strong> for Show</li>
           <li>Seen player pays <strong>2× Table Amount</strong> for Show</li>
+          <li>On an exact tie, the <strong>initiator loses</strong></li>
         </ul>
       </div>
       <div class="rules-card">
         <h3>🤝 Side Show</h3>
-        <p>Request to compare cards privately with the <strong>previous player</strong>. Both must be "Seen". Unlocked after <strong>3 rounds</strong> of betting.</p>
+        <p>Request to compare cards privately with the <strong>previous player</strong>. Both must be "Seen". Unlocked after <strong>3 completed rounds</strong> of betting.</p>
         <ul>
           <li>Only works when <strong>more than 2 players</strong> remain</li>
+          <li>Previous player must also be <strong>Seen</strong> (can't challenge a blind player)</li>
           <li>Costs <strong>2× Table Amount</strong></li>
           <li>Loser is folded, winner continues</li>
           <li>Both players see each other's cards briefly</li>
@@ -199,9 +216,31 @@
         <p class="rules-note">💡 If you hold a joker card, your hand name shows "(Joker)" next to it.</p>
       </div>
       <div class="rules-card">
+        <h3>🎴 Zandu (3 Jokers)</h3>
+        <p>Three cards are drawn from the deck as <strong>Jokers</strong>. They are revealed <strong>progressively</strong> — making hands wilder as the game goes on!</p>
+        <ul>
+          <li><strong>Start:</strong> 1st Joker is revealed face-up. 2 more are face-down.</li>
+          <li><strong>After Round 1:</strong> 2nd Joker is flipped face-up.</li>
+          <li><strong>After Round 2:</strong> 3rd Joker is flipped face-up.</li>
+          <li>All cards matching a <strong>revealed Joker's rank</strong> become wild.</li>
+        </ul>
+        <p class="rules-note">💡 Strategy shifts as more wilds are revealed — a weak hand can become a Trail!</p>
+      </div>
+      <div class="rules-card">
+        <h3>🔫 AK47</h3>
+        <p>Four ranks are <strong>always wild</strong> from the start: <strong>A, K, 4, and 7</strong>. If you hold any of these, it acts as a wild card to form the best possible hand.</p>
+        <ul>
+          <li>Wild ranks: <strong>Ace, King, 4, 7</strong> — all suits count</li>
+          <li>All wilds active from <strong>Turn 1</strong> — no progressive reveal</li>
+          <li>Multiple wilds in hand = extremely strong hands</li>
+          <li>No cards are drawn from the deck for jokers</li>
+        </ul>
+        <p class="rules-note">💡 Two wilds in hand almost guarantees a Trail. Three wilds = A-A-A Trail (best hand)!</p>
+      </div>
+      <div class="rules-card">
         <h3>🔄 Muflis Mode</h3>
         <p>Everything is <strong>reversed</strong> — the <strong>lowest hand wins</strong>! High Card beats Trail. Aim for the worst possible hand.</p>
-        <p class="rules-note">💡 Same rankings, just flipped. 4-3-2 offsuit is the best hand!</p>
+        <p class="rules-note">💡 Same rankings, just flipped. 2♠ 3♥ 5♦ (offsuit, no sequence) is the best hand!</p>
       </div>
     </div>
   </div>
@@ -240,6 +279,8 @@
           <option value="2card">✂️ 2 Cards</option>
           <option value="4card">💥 4 Cards</option>
           <option value="joker">🃏 Joker</option>
+          <option value="zandu">🃏 Zandu (3 Jokers)</option>
+          <option value="ak47">🔫 AK47</option>
           <option value="muflis">🔄 Muflis</option>
         </select>
         <label>Who picks mode</label>
@@ -271,6 +312,8 @@
               <option value="2card">✂️ 2 Cards</option>
               <option value="4card">💥 4 Cards</option>
               <option value="joker">🃏 Joker</option>
+              <option value="zandu">🃏 Zandu (3 Jokers)</option>
+              <option value="ak47">🔫 AK47</option>
               <option value="muflis">🔄 Muflis</option>
             </select>
           </div>
@@ -381,4 +424,4 @@ function showRulesTab(btn, tabId) {
 }
 </script>
 <script src="/static/js/sounds.js?v=9"></script>
-<script src="/static/js/teen_patti.js?v=14"></script>
+<script src="/static/js/teen_patti.js?v=17"></script>

@@ -133,7 +133,11 @@ tp = (() => {
         render();
       } else if (msg.type === 'event') {
         addLog(msg.message);
-        if (msg.message.includes('Joker mode') || msg.message.includes('Muflis mode') || msg.message.includes('2-Card mode') || msg.message.includes('4-Card mode')) {
+        if (msg.message.includes('Joker mode') || msg.message.includes('Zandu mode') || msg.message.includes('AK47 mode') || msg.message.includes('Muflis mode') || msg.message.includes('2-Card mode') || msg.message.includes('4-Card mode')) {
+          indiex.toast(msg.message);
+          playModeSound();
+        }
+        if (msg.message.includes('Joker #') && msg.message.includes('revealed')) {
           indiex.toast(msg.message);
           playModeSound();
         }
@@ -304,6 +308,12 @@ tp = (() => {
       if (s.game_type === 'joker') {
         $modeBadge.textContent = '🃏 JOKER MODE';
         $modeBadge.className = 'mode-badge joker';
+      } else if (s.game_type === 'zandu') {
+        $modeBadge.textContent = '🃏 ZANDU — 3 JOKERS';
+        $modeBadge.className = 'mode-badge joker';
+      } else if (s.game_type === 'ak47') {
+        $modeBadge.textContent = '🔫 AK47 — A, K, 4, 7 WILD';
+        $modeBadge.className = 'mode-badge joker';
       } else if (s.game_type === 'muflis') {
         $modeBadge.textContent = '🔄 MUFLIS — LOWEST WINS';
         $modeBadge.className = 'mode-badge muflis';
@@ -326,6 +336,24 @@ tp = (() => {
         <div class="joker-label">JOKER</div>
         <div class="joker-card ${isRed ? 'red' : ''}">
           <span class="rank">${jc.rank}</span><span class="suit">${jc.suit}</span>
+        </div>`;
+      $jokerDisp.style.display = 'flex';
+    } else if (s.game_type === 'zandu' && s.zandu_jokers) {
+      const cards = s.zandu_jokers;
+      const revealed = s.zandu_revealed || 0;
+      $jokerDisp.innerHTML = `
+        <div class="joker-label">ZANDU JOKERS (${revealed}/3)</div>
+        <div class="zandu-cards">
+          ${cards.map((c, i) => {
+            if (c) {
+              const isRed = c.suit === '♥' || c.suit === '♦';
+              return `<div class="joker-card ${isRed ? 'red' : ''}" title="Joker #${i+1}">
+                <span class="rank">${c.rank}</span><span class="suit">${c.suit}</span>
+              </div>`;
+            } else {
+              return `<div class="joker-card face-down" title="Hidden Joker #${i+1}">🂠</div>`;
+            }
+          }).join('')}
         </div>`;
       $jokerDisp.style.display = 'flex';
     } else {

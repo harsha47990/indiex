@@ -201,6 +201,7 @@ def _persist_coins(room):
             logger.info(
                 "House commission %d credited (room %s)", room.house_commission, room.code,
             )
+            room.house_commission = 0  # prevent double-credit on repeated calls
     except Exception as e:
         logger.error("Failed to persist coins: %s", e)
 
@@ -227,7 +228,7 @@ def _on_start(room, username, msg):
         return False, f"Only {starter} can start"
     table_amount = int(msg.get("table_amount", 0))
     game_type = msg.get("game_type", "normal")
-    if game_type not in ("normal", "joker", "muflis", "2card", "4card"):
+    if game_type not in ("normal", "joker", "muflis", "2card", "4card", "zandu", "ak47"):
         game_type = "normal"
     # Admin can change mode_picker setting
     mp = msg.get("mode_picker", "")
@@ -277,6 +278,10 @@ async def _on_request_coins(ws, room_code, room, username):
 
 async def _on_exit(ws, room_code, room, username):
     """Handle 'exit' — player leaves, cleanup, close socket."""
+    # Persist coins before removal so bet losses aren't lost
+    p = room.player(username)
+    if p:
+        _persist_player_coins(p)
     exit_ok, exit_msg = exit_room(room_code, username)
     await ws.send_json({"type": "ack", "ok": exit_ok, "message": exit_msg})
     await ws.send_json({"type": "exit", "message": exit_msg})
